@@ -1,22 +1,18 @@
 ---
 name: Feature request
-about: What would enhance your LeetHub experience?
+about: Suggest a change or improvement
 title: ''
 labels: ''
 assignees: ''
 
 ---
 
-## Please review previous closed issues before filling out a new one! Duplicate issues will be closed without comment.
+## Feature request
 
-**Is your feature request related to a problem? Please describe.**
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+**What problem are you trying to solve?**
 
-**Describe the solution you'd like**
-A clear and concise description of what you want to happen.
+**What would you like to happen?**
 
-**Describe alternatives you've considered**
-A clear and concise description of any alternative solutions or features you've considered.
+**Alternatives considered (optional)**
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+**Additional context (optional)**

@@ -86,7 +86,7 @@ const upload = (
 
         chrome.storage.local.get('stats', (data2) => {
           let { stats } = data2;
-          if (stats === null || stats === {} || stats === undefined) {
+          if (stats === null || stats === undefined || Object.keys(stats).length === 0) {
             // create stats object
             stats = {};
             stats.solved = 0;
@@ -665,7 +665,7 @@ const loader = setInterval(() => {
       notes = getNotesIfAny();
       if (notes.length > 0) {
         setTimeout(function () {
-          if (notes != undefined && notes.length != 0) {
+          if (notes !== undefined && notes.length !== 0) {
             console.log('Create Notes');
             // means we can upload the notes too
             uploadGit(
@@ -706,7 +706,7 @@ const loader = setInterval(() => {
 function startUploadCountDown() {
   uploadState.uploading = true;
   uploadState['countdown'] = setTimeout(() => {
-    if ((uploadState.uploading = true)) {
+    if (uploadState.uploading === true) {
       // still uploading, then it failed
       uploadState.uploading = false;
       markUploadFailed();

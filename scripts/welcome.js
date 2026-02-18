@@ -72,6 +72,12 @@ const statusCode = (res, status, name) => {
         },
       );
 
+      chrome.storage.local.get('leethub_token', (t) => {
+        if (t && t.leethub_token && res && res.full_name) {
+          syncExistingSolutions(t.leethub_token, res.full_name);
+        }
+      });
+
       break;
   }
 };
@@ -82,15 +88,23 @@ const createRepo = (token, name) => {
     name,
     private: true,
     auto_init: true,
-    description:
-      'Collection of LeetCode questions to ace the coding interview! - Created using [LeetHub](https://github.com/QasimWani/LeetHub)',
+    description: 'LeetHub solutions repository (auto-synced).',
   };
   data = JSON.stringify(data);
 
   const xhr = new XMLHttpRequest();
   xhr.addEventListener('readystatechange', function () {
     if (xhr.readyState === 4) {
-      statusCode(JSON.parse(xhr.responseText), xhr.status, name);
+      if (xhr.responseText && xhr.responseText.length > 0) {
+        try {
+          statusCode(JSON.parse(xhr.responseText), xhr.status, name);
+        } catch (e) {
+          console.error('Failed to parse response:', e);
+          statusCode({}, xhr.status, name);
+        }
+      } else {
+        statusCode({}, xhr.status, name);
+      }
     }
   });
 
@@ -197,6 +211,17 @@ const linkRepo = (token, name) => {
                   $('#p_solved_hard').text(stats.hard);
                 }
               });
+
+              if (token && res && res.full_name) {
+                chrome.storage.local.get('stats', (existing) => {
+                  const existingStats = existing?.stats;
+                  const hasSha =
+                    existingStats &&
+                    existingStats.sha &&
+                    Object.keys(existingStats.sha).length > 0;
+                  if (!hasSha) syncExistingSolutions(token, res.full_name);
+                });
+              }
             },
           );
           /* Hide accordingly */

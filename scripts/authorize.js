@@ -14,9 +14,12 @@ const localAuth = {
     this.AUTHORIZATION_URL =
       'https://github.com/login/oauth/authorize';
     this.CLIENT_ID = 'beb4f0aa19ab8faf5004';
-    this.CLIENT_SECRET = '843f835609c7ef02ef0f2f1645bc49514c0e65a6';
     this.REDIRECT_URL = 'https://github.com/'; // for example, https://github.com
     this.SCOPES = ['repo'];
+  },
+
+  cleanup() {
+    chrome.storage.local.set({ pipe_leethub: false, oauth_pkce: null });
   },
 
   /**
@@ -26,12 +29,42 @@ const localAuth = {
    */
   parseAccessCode(url) {
     if (url.match(/\?error=(.+)/)) {
+      this.cleanup();
       chrome.tabs.getCurrent(function (tab) {
         chrome.tabs.remove(tab.id, function () {});
       });
     } else {
-      // eslint-disable-next-line
-      this.requestToken(url.match(/\?code=([\w\/\-]+)/)[1]);
+      const codeMatch = url.match(/[?&]code=([\w\/\-]+)/);
+      const stateMatch = url.match(/[?&]state=([\w\-]+)/);
+      const code = codeMatch ? codeMatch[1] : null;
+      const state = stateMatch ? stateMatch[1] : null;
+      if (!code) {
+        this.cleanup();
+        chrome.runtime.sendMessage({
+          closeWebPage: true,
+          isSuccess: false,
+        });
+        return;
+      }
+
+      chrome.storage.local.get('oauth_pkce', (stored) => {
+        const pkce = stored ? stored.oauth_pkce : null;
+        const isFresh =
+          pkce && typeof pkce.ts === 'number' && Date.now() - pkce.ts < 10 * 60 * 1000;
+        const stateOk = pkce && pkce.state && state && pkce.state === state;
+        const verifier = pkce && pkce.code_verifier ? pkce.code_verifier : null;
+
+        if (!isFresh || !stateOk || !verifier) {
+          this.cleanup();
+          chrome.runtime.sendMessage({
+            closeWebPage: true,
+            isSuccess: false,
+          });
+          return;
+        }
+
+        this.requestToken(code, verifier);
+      });
     }
   },
 
@@ -72,6 +105,7 @@ const localAuth = {
    * @param token The OAuth2 token given to the application from the provider.
    */
   finish(token) {
+    this.cleanup();
     /* Get username */
     // To validate user, load user object from GitHub.
     const AUTHENTICATION_URL = 'https://api.github.com/user';
@@ -86,7 +120,7 @@ const localAuth = {
             isSuccess: true,
             token,
             username,
-            KEY: this.KEY,
+            KEY: 'leethub_token',
           });
         }
       }

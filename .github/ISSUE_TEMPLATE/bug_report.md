@@ -1,29 +1,27 @@
 ---
 name: Bug report
-about: Create a report to help us improve LeetHub
+about: Report a problem with the extension
 title: ''
 labels: bug
-assignees: QasimWani
+assignees: ''
 
 ---
 
-## Please review previous closed issues before filling out a new one! Duplicate issues will be closed without comment.
+## Bug report
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**What happened?**
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+**Steps to reproduce**
+1.
+2.
+3.
 
 **Expected behavior**
-A clear and concise description of what you expected to happen.
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+**Environment**
+- Browser + version:
+- Extension version:
+- OS:
 
-**Additional context**
-Add any other context about the problem here.
+**Logs (optional)**
+- `chrome://extensions` → LeetHub → Service worker → Inspect → Console
