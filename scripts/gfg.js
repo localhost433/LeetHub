@@ -1,26 +1,8 @@
-/* Enum for languages supported by GeeksForGeeks. */
-const languages = {
-  Python: '.py',
-  Python3: '.py',
-  'C++': '.cpp',
-  C: '.c',
-  Java: '.java',
-  JavaScript: '.js',
-  Javascript: '.js',
-};
-
 /* Commit messages */
-const README_MSG = 'Create README - LeetHub';
-const SUBMIT_MSG = 'Added solution - LeetHub';
-const UPDATE_MSG = 'Updated solution - LeetHub';
 let START_MONITOR = true;
-const toKebabCase = (string) => {
-  return string
-    .replace(/[^a-zA-Z0-9\. ]/g, '') // remove special chars
-    .replace(/([a-z])([A-Z])/g, '$1-$2') // get all lowercase letters that are near to uppercase ones
-    .replace(/[\s_]+/g, '-') // replace all spaces and low dash
-    .toLowerCase(); // convert to lower case
-};
+
+
+
 
 function findGfgLanguage() {
   const ele =
@@ -90,93 +72,121 @@ function getCode() {
   return text || '';
 }
 
-const gfgLoader = setInterval(() => {
-  let code = null;
-  let problemStatement = null;
-  let title = null;
-  let language = null;
-  let difficulty = null;
-
+/* Monitor for GFG submission success */
+const gfgObserver = new MutationObserver((mutations) => {
   if (
-    window.location.href.includes(
+    !window.location.href.includes(
       'practice.geeksforgeeks.org/problems',
     )
   ) {
-    const submitBtn = document
-      .evaluate(
-        ".//button[text()='Submit']",
-        document.body,
-        null,
-        XPathResult.ANY_TYPE,
-        null,
-      )
-      .iterateNext();
+    return;
+  }
 
+  // Check if we need to attach listener to submit button
+  const submitBtn = document
+    .evaluate(
+      ".//button[text()='Submit']",
+      document.body,
+      null,
+      XPathResult.ANY_TYPE,
+      null,
+    )
+    .iterateNext();
+
+  if (
+    submitBtn &&
+    !submitBtn.hasAttribute('data-leethub-monitored')
+  ) {
+    submitBtn.setAttribute('data-leethub-monitored', 'true');
     submitBtn.addEventListener('click', function () {
       START_MONITOR = true;
-      const submission = setInterval(() => {
-        const output = document.querySelectorAll(
-          '[class^="problems_content"]',
-        )[0].innerText;
-        if (
-          output.includes('Problem Solved Successfully') &&
-          START_MONITOR
-        ) {
-          // clear timeout
-          START_MONITOR = false;
-          clearInterval(gfgLoader);
-          clearInterval(submission);
-          // get data
-          title = findTitle().trim();
-          difficulty = findDifficulty();
-          problemStatement = getProblemStatement();
-          code = getCode();
-          language = findGfgLanguage();
-
-          // format data
-          const probName = `${title} - GFG`;
-
-          problemStatement = `# ${title}\n## ${difficulty}\n${problemStatement}`;
-
-          // if language was found
-          if (language !== null) {
-            uploadGit(
-              btoa(unescape(encodeURIComponent(problemStatement))),
-              probName,
-              'README.md',
-              README_MSG,
-              'upload',
-              undefined,
-              undefined,
-              difficulty,
-            );
-
-            if (code !== '') {
-              setTimeout(function () {
-                uploadGit(
-                  btoa(unescape(encodeURIComponent(code))),
-                  probName,
-                  toKebabCase(title + language),
-                  SUBMIT_MSG,
-                  'upload',
-                  undefined,
-                  undefined,
-                  difficulty,
-                );
-              }, 1000);
-            }
-          }
-        } else if (output.includes('Compilation Error')) {
-          // clear timeout and do nothing
-          clearInterval(submission);
-        } else if (
-          !START_MONITOR &&
-          (output.includes('Compilation Error') ||
-            output.includes('Correct Answer'))
-        ) {
-          clearInterval(submission);
-        }
-      }, 1000);
+      monitorSubmissionResult();
     });
   }
+});
+
+function monitorSubmissionResult() {
+  const submissionObserver = new MutationObserver((mutations) => {
+    const outputElem = document.querySelectorAll(
+      '[class^="problems_content"]',
+    );
+    if (!outputElem || outputElem.length === 0) return;
+
+    const output = outputElem[0].innerText;
+
+    if (
+      output.includes('Problem Solved Successfully') &&
+      START_MONITOR
+    ) {
+      START_MONITOR = false;
+      submissionObserver.disconnect();
+
+      const title = findTitle().trim();
+      const difficulty = findDifficulty();
+      let problemStatement = getProblemStatement();
+      let code = getCode();
+      const language = findGfgLanguage();
+
+      const probName = `${title} - GFG`;
+      problemStatement = `# ${title}\n## ${difficulty}\n${problemStatement}`;
+
+      // Use new GitHub Service
+      // Ensure these global services are available (loaded via manifest)
+      const GitHub = window.LeetHubGitHubService || { uploadSolution: async () => {} };
+
+      if (language !== null) {
+        // Upload README
+        GitHub.uploadSolution(
+          problemStatement, // pass raw string, service handles encoding
+          probName,
+          'README.md',
+          readmeMsg,
+          'upload',
+          difficulty
+        );
+
+        if (code !== '') {
+          setTimeout(function () {
+            // Upload Code
+            GitHub.uploadSolution(
+              code, // pass raw string
+              probName,
+              toKebabCase(title + language),
+              submitMsg,
+              'upload',
+              difficulty
+            );
+          }, 1000);
+        }
+      }
+    } else if (output.includes('Compilation Error')) {
+      submissionObserver.disconnect();
+    } else if (
+      !START_MONITOR &&
+      (output.includes('Compilation Error') ||
+        output.includes('Correct Answer'))
+    ) {
+      submissionObserver.disconnect();
+    }
+  });
+
+  const targetNode = document.body; // Or a more specific container if generic enough
+  submissionObserver.observe(targetNode, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+  });
+
+  // Timeout to stop observing if nothing happens after 30s
+  setTimeout(() => {
+    submissionObserver.disconnect();
+  }, 30000);
+}
+
+// Start monitoring
+setTimeout(() => {
+  gfgObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
 }, 1000);
