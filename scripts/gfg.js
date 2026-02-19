@@ -32,7 +32,7 @@ function findGfgLanguage() {
 function findTitle() {
   const ele = document.querySelector('[class^="problems_header_content__title"] > h3')
     .innerText;
-  if (ele != null) {
+  if (ele !== null && ele !== undefined) {
     return ele;
   }
   return '';
@@ -41,8 +41,8 @@ function findTitle() {
 function findDifficulty() {
   const ele = document.querySelectorAll('[class^="problems_header_description"]')[0].children[0].innerText;
 
-  if (ele != null) {
-    if (ele.trim() == 'Basic' || ele.trim() === 'School') {
+  if (ele !== null && ele !== undefined) {
+    if (ele.trim() === 'Basic' || ele.trim() === 'School') {
       return 'Easy';
     }
     return ele;
@@ -58,15 +58,15 @@ function getProblemStatement() {
 function getCode() {
 
   const scriptContent = `
-  var editor = ace.edit("ace-editor");
-  var editorContent = editor.getValue();
-  var para = document.createElement("pre");
+  const editor = ace.edit("ace-editor");
+  const editorContent = editor.getValue();
+  const para = document.createElement("pre");
   para.innerText+=editorContent;
   para.setAttribute("id","codeDataLeetHub")
   document.body.appendChild(para);
   `;
 
-  var script = document.createElement('script');
+  const script = document.createElement('script');
   script.id = 'tmpScript';
   script.appendChild(document.createTextNode(scriptContent));
   (
@@ -79,14 +79,14 @@ function getCode() {
   const nodeDeletionScript = `
   document.body.removeChild(para)
   `;
-  var script = document.createElement('script');
-  script.id = 'tmpScript';
-  script.appendChild(document.createTextNode(nodeDeletionScript));
+  const script2 = document.createElement('script');
+  script2.id = 'tmpScript';
+  script2.appendChild(document.createTextNode(nodeDeletionScript));
   (
     document.body ||
     document.head ||
     document.documentElement
-  ).appendChild(script);
+  ).appendChild(script2);
 
   return text || '';
 }

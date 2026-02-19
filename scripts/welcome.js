@@ -1,3 +1,63 @@
+function $(selector) {
+  const nodes = Array.from(document.querySelectorAll(selector));
+  const api = {
+    val() {
+      return nodes[0] ? nodes[0].value : undefined;
+    },
+    text(value) {
+      if (value === undefined) return nodes[0]?.textContent;
+      nodes.forEach((n) => {
+        n.textContent = value;
+      });
+      return api;
+    },
+    html(value) {
+      if (value === undefined) return nodes[0]?.innerHTML;
+      nodes.forEach((n) => {
+        n.innerHTML = value;
+      });
+      return api;
+    },
+    show() {
+      nodes.forEach((n) => {
+        n.hidden = false;
+        if (n.style) n.style.display = '';
+      });
+      return api;
+    },
+    hide() {
+      nodes.forEach((n) => {
+        n.hidden = true;
+        if (n.style) n.style.display = 'none';
+      });
+      return api;
+    },
+    attr(name, value) {
+      nodes.forEach((n) => {
+        if (name === 'disabled') {
+          n.disabled = Boolean(value);
+          return;
+        }
+        if (value === null || value === undefined) {
+          n.removeAttribute(name);
+        } else {
+          n.setAttribute(name, String(value));
+        }
+      });
+      return api;
+    },
+    on(eventName, handler) {
+      nodes.forEach((n) => n.addEventListener(eventName, handler));
+      return api;
+    },
+    focus() {
+      nodes[0]?.focus();
+      return api;
+    },
+  };
+  return api;
+}
+
 const option = () => {
   return $('#type').val();
 };
@@ -112,6 +172,104 @@ const createRepo = (token, name) => {
   xhr.setRequestHeader('Authorization', `token ${token}`);
   xhr.setRequestHeader('Accept', 'application/vnd.github.v3+json');
   xhr.send(data);
+};
+
+const githubFetchJson = async (url, token) => {
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `token ${token}`,
+      Accept: 'application/vnd.github.v3+json',
+    },
+  });
+  const text = await res.text();
+  let json = {};
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch (e) {
+    json = {};
+  }
+  return { status: res.status, json };
+};
+
+const syncExistingSolutions = async (token, hook) => {
+  if (!token || !hook) return;
+
+  try {
+    $('#success').html(
+      `Syncing existing solutions from <a target="_blank" href="https://github.com/${hook}">${hook}</a>...`,
+    );
+    $('#success').show();
+
+    const repoResp = await githubFetchJson(
+      `https://api.github.com/repos/${hook}`,
+      token,
+    );
+    if (repoResp.status !== 200) return;
+
+    const branch = repoResp.json.default_branch || 'main';
+    const refResp = await githubFetchJson(
+      `https://api.github.com/repos/${hook}/git/refs/heads/${branch}`,
+      token,
+    );
+    const commitSha = refResp.json?.object?.sha;
+    if (!commitSha) return;
+
+    const commitResp = await githubFetchJson(
+      `https://api.github.com/repos/${hook}/git/commits/${commitSha}`,
+      token,
+    );
+    const treeSha = commitResp.json?.tree?.sha;
+    if (!treeSha) return;
+
+    const treeResp = await githubFetchJson(
+      `https://api.github.com/repos/${hook}/git/trees/${treeSha}?recursive=1`,
+      token,
+    );
+    const items = treeResp.json?.tree;
+    if (!Array.isArray(items)) return;
+
+    const additions = {};
+    const solvedDirs = new Set();
+
+    items.forEach((item) => {
+      if (!item || item.type !== 'blob' || typeof item.path !== 'string') {
+        return;
+      }
+      const parts = item.path.split('/');
+      if (parts.length !== 2) return;
+      const [dir, file] = parts;
+      if (!dir || !file) return;
+
+      additions[dir + file] = item.sha;
+      if (file === 'README.md') solvedDirs.add(dir);
+    });
+
+    chrome.storage.local.get('stats', (s) => {
+      let { stats } = s;
+      if (!stats || typeof stats !== 'object') {
+        stats = { solved: 0, easy: 0, medium: 0, hard: 0, sha: {} };
+      }
+      if (!stats.sha || typeof stats.sha !== 'object') stats.sha = {};
+
+      stats.sha = { ...stats.sha, ...additions };
+      stats.solved = Math.max(Number(stats.solved || 0), solvedDirs.size);
+
+      chrome.storage.local.set({ stats }, () => {
+        if (stats && stats.solved) {
+          $('#p_solved').text(stats.solved);
+          $('#p_solved_easy').text(stats.easy || 0);
+          $('#p_solved_medium').text(stats.medium || 0);
+          $('#p_solved_hard').text(stats.hard || 0);
+        }
+        $('#success').html(
+          `Synced ${solvedDirs.size} existing problem folders from <a target="_blank" href="https://github.com/${hook}">${hook}</a>.`,
+        );
+        $('#success').show();
+      });
+    });
+  } catch (e) {
+    console.error('Sync existing solutions failed', e);
+  }
 };
 
 /* Status codes for linking of repo */

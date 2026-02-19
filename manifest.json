@@ -42,20 +42,6 @@
       "run_at": "document_idle"
     }
   ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "scripts/oauth2.js",
-        "popup.js",
-        "scripts/welcome.js"
-      ],
-      "matches": [
-        "https://github.com/*",
-        "https://leetcode.com/*",
-        "https://practice.geeksforgeeks.org/*"
-      ]
-    }
-  ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   }

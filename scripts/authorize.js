@@ -30,8 +30,9 @@ const localAuth = {
   parseAccessCode(url) {
     if (url.match(/\?error=(.+)/)) {
       this.cleanup();
-      chrome.tabs.getCurrent(function (tab) {
-        chrome.tabs.remove(tab.id, function () {});
+      chrome.runtime.sendMessage({
+        closeWebPage: true,
+        isSuccess: false,
       });
     } else {
       const codeMatch = url.match(/[?&]code=([\w\/\-]+)/);
@@ -73,21 +74,37 @@ const localAuth = {
    *
    * @param code The access code returned by provider.
    */
-  requestToken(code) {
+  requestToken(code, codeVerifier) {
     const that = this;
     const data = new FormData();
     data.append('client_id', this.CLIENT_ID);
-    data.append('client_secret', this.CLIENT_SECRET);
     data.append('code', code);
+    data.append('code_verifier', codeVerifier);
+    data.append('redirect_uri', this.REDIRECT_URL);
 
     const xhr = new XMLHttpRequest();
     xhr.addEventListener('readystatechange', function () {
       if (xhr.readyState === 4) {
         if (xhr.status === 200) {
-          that.finish(
-            xhr.responseText.match(/access_token=([^&]*)/)[1],
-          );
+          let token = null;
+          try {
+            const parsed = JSON.parse(xhr.responseText);
+            token = parsed && parsed.access_token ? parsed.access_token : null;
+          } catch (e) {
+            token = null;
+          }
+
+          if (token) {
+            that.finish(token);
+          } else {
+            that.cleanup();
+            chrome.runtime.sendMessage({
+              closeWebPage: true,
+              isSuccess: false,
+            });
+          }
         } else {
+          that.cleanup();
           chrome.runtime.sendMessage({
             closeWebPage: true,
             isSuccess: false,
@@ -96,6 +113,7 @@ const localAuth = {
       }
     });
     xhr.open('POST', this.ACCESS_TOKEN_URL, true);
+    xhr.setRequestHeader('Accept', 'application/json');
     xhr.send(data);
   },
 

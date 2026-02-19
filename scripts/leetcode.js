@@ -281,38 +281,38 @@ function findCode(
     submissionURL = submissionRef.href;
   }
 
-  if (submissionURL != undefined) {
+  if (submissionURL !== undefined) {
     /* Request for the submission details page */
     const xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function () {
-      if (this.readyState == 4 && this.status == 200) {
+      if (this.readyState === 4 && this.status === 200) {
         /* received submission details as html reponse. */
-        var doc = new DOMParser().parseFromString(
+        const doc = new DOMParser().parseFromString(
           this.responseText,
           'text/html',
         );
         /* the response has a js object called pageData. */
         /* Pagedata has the details data with code about that submission */
-        var scripts = doc.getElementsByTagName('script');
-        for (var i = 0; i < scripts.length; i++) {
-          var text = scripts[i].innerText;
+        const scripts = doc.getElementsByTagName('script');
+        for (let i = 0; i < scripts.length; i++) {
+          const text = scripts[i].innerText;
           if (text.includes('pageData')) {
             /* Considering the pageData as text and extract the substring
             which has the full code */
-            var firstIndex = text.indexOf('submissionCode');
-            var lastIndex = text.indexOf('editCodeUrl');
-            var slicedText = text.slice(firstIndex, lastIndex);
+            const firstIndex = text.indexOf('submissionCode');
+            const lastIndex = text.indexOf('editCodeUrl');
+            const slicedText = text.slice(firstIndex, lastIndex);
             /* slicedText has code as like as. (submissionCode: 'Details code'). */
             /* So finding the index of first and last single inverted coma. */
-            var firstInverted = slicedText.indexOf("'");
-            var lastInverted = slicedText.lastIndexOf("'");
+            const firstInverted = slicedText.indexOf("'");
+            const lastInverted = slicedText.lastIndexOf("'");
             /* Extract only the code */
-            var codeUnicoded = slicedText.slice(
+            const codeUnicoded = slicedText.slice(
               firstInverted + 1,
               lastInverted,
             );
             /* The code has some unicode. Replacing all unicode with actual characters */
-            var code = codeUnicoded.replace(
+            const code = codeUnicoded.replace(
               /\\u[\dA-F]{4}/gi,
               function (match) {
                 return String.fromCharCode(
@@ -345,7 +345,7 @@ function findCode(
               msg = `Time: ${resultRuntime}, Memory: ${resultMemory} - LeetHub`;
             }
 
-            if (code != null) {
+            if (code !== null && code !== undefined) {
               setTimeout(function () {
                 uploadGit(
                   btoa(unescape(encodeURIComponent(code))),
@@ -429,7 +429,7 @@ function getProblemNameSlug() {
 
 function addLeadingZeros(title) {
   const maxTitlePrefixLength = 4;
-  var len = title.split('-')[0].length;
+  const len = title.split('-')[0].length;
   if (len < maxTitlePrefixLength) {
     return '0'.repeat(4 - len) + title;
   }
@@ -438,7 +438,7 @@ function addLeadingZeros(title) {
 
 /* Parser function for the question and tags */
 function parseQuestion() {
-  var questionUrl = window.location.href;
+  let questionUrl = window.location.href;
   if (questionUrl.endsWith('/submissions/')) {
     questionUrl = questionUrl.substring(
       0,
@@ -662,7 +662,7 @@ const loader = setInterval(() => {
 
       /* get the notes and upload it */
       /* only upload notes if there is any */
-      notes = getNotesIfAny();
+      const notes = getNotesIfAny();
       if (notes.length > 0) {
         setTimeout(function () {
           if (notes !== undefined && notes.length !== 0) {

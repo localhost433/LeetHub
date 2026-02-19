@@ -74,9 +74,6 @@ const oAuth2 = {
 
         chrome.tabs.create({ url, active: true }, function () {
           window.close();
-          chrome.tabs.getCurrent(function (tab) {
-            if (tab && tab.id) chrome.tabs.remove(tab.id, function () {});
-          });
         });
       },
     );

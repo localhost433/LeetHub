@@ -5,8 +5,8 @@
   </head>
 
   <body>
-    <div class="ui grid container">
-      <div class="sixteen wide center aligned column">
+    <div>
+      <div>
         <br />
         <p class="caption" style="font-size: 9em">
           Leet<span style="color: orange">Hub</span>
@@ -28,40 +28,28 @@
         id="hook_mode"
         class="ui grid container"
       >
-        <div class="six wide column">
+        <div>
           <p class="caption ui large header center aligned">
             To get started with LeetHub
           </p>
         </div>
-        <div class="four wide left aligned column">
-          <div class="ui form">
-            <div class="field">
-              <select id="type">
-                <option value="">Pick an Option</option>
-                <option value="new">
-                  Create a new Private Repository
-                </option>
-                <option value="link">
-                  Link an Existing Repository
-                </option>
-              </select>
-            </div>
-          </div>
+        <div>
+          <select id="type">
+            <option value="">Pick an Option</option>
+            <option value="new">Create a new Private Repository</option>
+            <option value="link">Link an Existing Repository</option>
+          </select>
         </div>
-        <div class="six wide column">
-          <div class="ui form">
-            <div class="field">
-              <input
-                autocomplete="off"
-                id="name"
-                placeholder="Repository Name"
-                type="text"
-              />
-            </div>
-          </div>
+        <div>
+          <input
+            autocomplete="off"
+            id="name"
+            placeholder="Repository Name"
+            type="text"
+          />
         </div>
 
-        <div class="sixteen wide right aligned column">
+        <div>
           <br />
           <button
             id="hook_button"
@@ -79,7 +67,7 @@
         id="commit_mode"
         class="ui grid container"
       >
-        <div class="eight wide center aligned column">
+        <div>
           <br /><br />
           <div
             style="font-size: 2.3em"
@@ -100,32 +88,6 @@
             <span style="color: #d9534f">&ensp; &ensp; Hard:</span>
             <span id="p_solved_hard" style="color: #d9534f">0 </span>
           </div>
-        </div>
-        <div class="eight wide center aligned column">
-          <br /><br /><br />
-          <div class="ui inverted large header">
-            Want more features? <br /><a
-              style="color: aqua !important; font-size: 0.8em"
-              target="_blank"
-              href="https://github.com/QasimWani/LeetHub/labels/feature"
-              >Request a feature!</a
-            >
-          </div>
-        </div>
-      </div>
-
-      <!-- Rate on GitHub -->
-      <div class="sixteen wide right aligned column">
-        <br /><br /><br /><br /><br />
-        <div class="ui inverted small header">
-          <a
-            style="color: rgb(143, 202, 202) !important"
-            target="_blank"
-            href="https://github.com/QasimWani/LeetHub"
-            >Star <span style="color: white">Leet</span
-            ><span style="color: orange !important">Hub</span> on
-            GitHub</a
-          >
         </div>
       </div>
     </div>
