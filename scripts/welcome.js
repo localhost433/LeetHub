@@ -58,6 +58,67 @@ function $(selector) {
   return api;
 }
 
+function clearElement(el) {
+  while (el && el.firstChild) el.removeChild(el.firstChild);
+}
+
+function appendLink(el, href, text) {
+  const a = document.createElement('a');
+  a.href = href;
+  a.textContent = text;
+  a.target = '_blank';
+  a.rel = 'noreferrer';
+  el.appendChild(a);
+  return a;
+}
+
+function renderSuccessRepoMessage(kind, repoUrl, repoName) {
+  const el = document.getElementById('success');
+  if (!el) return;
+  clearElement(el);
+
+  el.append(document.createTextNode(`Successfully ${kind} `));
+  appendLink(el, repoUrl, repoName);
+  el.append(document.createTextNode('. Start '));
+  appendLink(el, 'https://leetcode.com', 'LeetCoding');
+  el.append(document.createTextNode('!'));
+}
+
+function renderSyncMessage(hook, solvedCount) {
+  const el = document.getElementById('success');
+  if (!el) return;
+  clearElement(el);
+  el.append(
+    document.createTextNode(
+      `Synced ${solvedCount} existing problem folders from `,
+    ),
+  );
+  appendLink(el, `https://github.com/${hook}`, hook);
+  el.append(document.createTextNode('.'));
+}
+
+function renderSyncingMessage(hook) {
+  const el = document.getElementById('success');
+  if (!el) return;
+  clearElement(el);
+  el.append(
+    document.createTextNode('Syncing existing solutions from '),
+  );
+  appendLink(el, `https://github.com/${hook}`, hook);
+  el.append(document.createTextNode('...'));
+}
+
+function renderLinkingError(name, detail) {
+  const el = document.getElementById('error');
+  if (!el) return;
+  clearElement(el);
+  el.append(document.createTextNode('Error linking '));
+  appendLink(el, `https://github.com/${name}`, name);
+  el.append(document.createTextNode(' to LeetHub.'));
+  el.appendChild(document.createElement('br'));
+  el.append(document.createTextNode(detail));
+}
+
 const option = () => {
   return $('#type').val();
 };
@@ -114,9 +175,7 @@ const statusCode = (res, status, name) => {
       /* Change mode type to commit */
       chrome.storage.local.set({ mode_type: 'commit' }, () => {
         $('#error').hide();
-        $('#success').html(
-          `Successfully created <a target="blank" href="${res.html_url}">${name}</a>. Start <a href="http://leetcode.com">LeetCoding</a>!`,
-        );
+        renderSuccessRepoMessage('created', res.html_url, name);
         $('#success').show();
         $('#unlink').show();
         /* Show new layout */
@@ -126,7 +185,17 @@ const statusCode = (res, status, name) => {
       });
       /* Set Repo Hook */
       chrome.storage.local.set(
-        { leethub_hook: res.full_name },
+        {
+          leethub_hook: res.full_name,
+          leetcode_import: {
+            done: false,
+            strategy: 'problems_all',
+            index: 0,
+            total: 0,
+            uploaded: 0,
+            ts: Date.now(),
+          },
+        },
         () => {
           console.log('Successfully set new repo hook');
         },
@@ -195,9 +264,7 @@ const syncExistingSolutions = async (token, hook) => {
   if (!token || !hook) return;
 
   try {
-    $('#success').html(
-      `Syncing existing solutions from <a target="_blank" href="https://github.com/${hook}">${hook}</a>...`,
-    );
+    renderSyncingMessage(hook);
     $('#success').show();
 
     const repoResp = await githubFetchJson(
@@ -232,7 +299,11 @@ const syncExistingSolutions = async (token, hook) => {
     const solvedDirs = new Set();
 
     items.forEach((item) => {
-      if (!item || item.type !== 'blob' || typeof item.path !== 'string') {
+      if (
+        !item ||
+        item.type !== 'blob' ||
+        typeof item.path !== 'string'
+      ) {
         return;
       }
       const parts = item.path.split('/');
@@ -252,7 +323,10 @@ const syncExistingSolutions = async (token, hook) => {
       if (!stats.sha || typeof stats.sha !== 'object') stats.sha = {};
 
       stats.sha = { ...stats.sha, ...additions };
-      stats.solved = Math.max(Number(stats.solved || 0), solvedDirs.size);
+      stats.solved = Math.max(
+        Number(stats.solved || 0),
+        solvedDirs.size,
+      );
 
       chrome.storage.local.set({ stats }, () => {
         if (stats && stats.solved) {
@@ -261,9 +335,7 @@ const syncExistingSolutions = async (token, hook) => {
           $('#p_solved_medium').text(stats.medium || 0);
           $('#p_solved_hard').text(stats.hard || 0);
         }
-        $('#success').html(
-          `Synced ${solvedDirs.size} existing problem folders from <a target="_blank" href="https://github.com/${hook}">${hook}</a>.`,
-        );
+        renderSyncMessage(hook, solvedDirs.size);
         $('#success').show();
       });
     });
@@ -278,24 +350,27 @@ const linkStatusCode = (status, name) => {
   switch (status) {
     case 301:
       $('#success').hide();
-      $('#error').html(
-        `Error linking <a target="blank" href="${`https://github.com/${name}`}">${name}</a> to LeetHub. <br> This repository has been moved permenantly. Try creating a new one.`,
+      renderLinkingError(
+        name,
+        'This repository has been moved permanently. Try creating a new one.',
       );
       $('#error').show();
       break;
 
     case 403:
       $('#success').hide();
-      $('#error').html(
-        `Error linking <a target="blank" href="${`https://github.com/${name}`}">${name}</a> to LeetHub. <br> Forbidden action. Please make sure you have the right access to this repository.`,
+      renderLinkingError(
+        name,
+        'Forbidden action. Please make sure you have the right access to this repository.',
       );
       $('#error').show();
       break;
 
     case 404:
       $('#success').hide();
-      $('#error').html(
-        `Error linking <a target="blank" href="${`https://github.com/${name}`}">${name}</a> to LeetHub. <br> Resource not found. Make sure you enter the right repository name.`,
+      renderLinkingError(
+        name,
+        'Resource not found. Make sure you enter the right repository name.',
       );
       $('#error').show();
       break;
@@ -320,7 +395,12 @@ const linkRepo = (token, name) => {
   const xhr = new XMLHttpRequest();
   xhr.addEventListener('readystatechange', function () {
     if (xhr.readyState === 4) {
-      const res = JSON.parse(xhr.responseText);
+      let res = {};
+      try {
+        res = xhr.responseText ? JSON.parse(xhr.responseText) : {};
+      } catch (e) {
+        res = {};
+      }
       const bool = linkStatusCode(xhr.status, name);
       if (xhr.status === 200) {
         // BUG FIX
@@ -347,16 +427,24 @@ const linkRepo = (token, name) => {
             { mode_type: 'commit', repo: res.html_url },
             () => {
               $('#error').hide();
-              $('#success').html(
-                `Successfully linked <a target="blank" href="${res.html_url}">${name}</a> to LeetHub. Start <a href="http://leetcode.com">LeetCoding</a> now!`,
-              );
+              renderSuccessRepoMessage('linked', res.html_url, name);
               $('#success').show();
               $('#unlink').show();
             },
           );
           /* Set Repo Hook */
           chrome.storage.local.set(
-            { leethub_hook: res.full_name },
+            {
+              leethub_hook: res.full_name,
+              leetcode_import: {
+                done: false,
+                strategy: 'problems_all',
+                index: 0,
+                total: 0,
+                uploaded: 0,
+                ts: Date.now(),
+              },
+            },
             () => {
               console.log('Successfully set new repo hook');
               /* Get problems solved count */
@@ -377,7 +465,8 @@ const linkRepo = (token, name) => {
                     existingStats &&
                     existingStats.sha &&
                     Object.keys(existingStats.sha).length > 0;
-                  if (!hasSha) syncExistingSolutions(token, res.full_name);
+                  if (!hasSha)
+                    syncExistingSolutions(token, res.full_name);
                 });
               }
             },
@@ -403,9 +492,12 @@ const unlinkRepo = () => {
     console.log(`Unlinking repo`);
   });
   /* Set Repo Hook to NONE */
-  chrome.storage.local.set({ leethub_hook: null }, () => {
-    console.log('Defaulted repo hook to NONE');
-  });
+  chrome.storage.local.set(
+    { leethub_hook: null, leetcode_import: null },
+    () => {
+      console.log('Defaulted repo hook to NONE');
+    },
+  );
 
   /* Hide accordingly */
   document.getElementById('hook_mode').style.display = 'inherit';

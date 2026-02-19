@@ -17,10 +17,7 @@
   "background": {
     "service_worker": "scripts/background.js"
   },
-  "permissions": [
-    "storage",
-    "tabs"
-  ],
+  "permissions": ["storage", "tabs"],
   "host_permissions": [
     "https://github.com/*",
     "https://api.github.com/*",
@@ -29,30 +26,18 @@
   ],
   "content_scripts": [
     {
-      "matches": [
-        "https://leetcode.com/*"
-      ],
-      "js": [
-        "scripts/leetcode.js"
-      ],
+      "matches": ["https://leetcode.com/*"],
+      "js": ["scripts/leetcode.js"],
       "run_at": "document_idle"
     },
     {
-      "matches": [
-        "https://practice.geeksforgeeks.org/*"
-      ],
-      "js": [
-        "scripts/gfg.js"
-      ],
+      "matches": ["https://practice.geeksforgeeks.org/*"],
+      "js": ["scripts/gfg.js"],
       "run_at": "document_idle"
     },
     {
-      "matches": [
-        "https://github.com/"
-      ],
-      "js": [
-        "scripts/authorize.js"
-      ],
+      "matches": ["https://github.com/"],
+      "js": ["scripts/authorize.js"],
       "run_at": "document_idle"
     }
   ],

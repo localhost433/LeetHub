@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="UTF-8" />
@@ -25,7 +25,9 @@
 
           <div class="divider"><span>or</span></div>
 
-          <label class="label" for="pat_token">Fine-grained token (recommended)</label>
+          <label class="label" for="pat_token"
+            >Fine-grained token (recommended)</label
+          >
           <input
             id="pat_token"
             class="input"
@@ -35,7 +37,8 @@
             placeholder="Paste GitHub fine-grained PAT"
           />
           <p class="hint">
-            Create a fine-grained PAT restricted to a single repo with Contents read/write.
+            Create a fine-grained PAT restricted to a single repo with
+            Contents read/write.
           </p>
           <button id="save_pat" class="btn btn-secondary">
             Save token
@@ -62,30 +65,63 @@
 
           <div class="repo" id="repo_url"></div>
 
+          <p id="import_status" class="muted" hidden></p>
+
+          <div class="row" style="display: flex; gap: 8px">
+            <button
+              id="refresh_status"
+              class="btn btn-secondary"
+              type="button"
+            >
+              Refresh
+            </button>
+            <button
+              id="retry_import"
+              class="btn btn-secondary"
+              type="button"
+            >
+              Retry import
+            </button>
+          </div>
+
           <div class="stats">
             <div class="stat">
               <div class="stat-label">Solved</div>
-              <div class="stat-value"><span id="p_solved">0</span></div>
+              <div class="stat-value">
+                <span id="p_solved">0</span>
+              </div>
             </div>
             <div class="stat-row">
-              <span class="pill pill-easy">Easy: <span id="p_solved_easy">0</span></span>
-              <span class="pill pill-medium">Medium: <span id="p_solved_medium">0</span></span>
-              <span class="pill pill-hard">Hard: <span id="p_solved_hard">0</span></span>
+              <span class="pill pill-easy"
+                >Easy: <span id="p_solved_easy">0</span></span
+              >
+              <span class="pill pill-medium"
+                >Medium: <span id="p_solved_medium">0</span></span
+              >
+              <span class="pill pill-hard"
+                >Hard: <span id="p_solved_hard">0</span></span
+              >
             </div>
           </div>
 
           <button id="logout" class="btn btn-secondary" type="button">
             Sign out
           </button>
-
         </div>
       </main>
 
       <!-- Generate Socials -->
       <footer id="socials" class="footer">
-        <a href="https://github.com/localhost433/LeetHub" target="_blank" rel="noreferrer">GitHub</a>
-        <a id="welcome_URL" href="" target="_blank" rel="noreferrer">Setup</a>
-      </div>
+        <a
+          href="https://github.com/localhost433/LeetHub"
+          target="_blank"
+          rel="noreferrer"
+          >GitHub</a
+        >
+        <a id="welcome_URL" href="" target="_blank" rel="noreferrer"
+          >Setup</a
+        >
+      </footer>
     </div>
 
     <script src="scripts/oauth2.js"></script>

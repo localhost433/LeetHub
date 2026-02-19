@@ -1,10 +1,13 @@
 /* Enum for languages supported by GeeksForGeeks. */
-// const gfgLanguages = {
-//   Python3: '.py',
-//   'C++': '.cpp',
-//   Java: '.java',
-//   Javascript: '.js',
-// };
+const languages = {
+  Python: '.py',
+  Python3: '.py',
+  'C++': '.cpp',
+  C: '.c',
+  Java: '.java',
+  JavaScript: '.js',
+  Javascript: '.js',
+};
 
 /* Commit messages */
 const README_MSG = 'Create README - LeetHub';
@@ -20,8 +23,8 @@ const toKebabCase = (string) => {
 };
 
 function findGfgLanguage() {
-  const ele = document.getElementsByClassName('divider text')[0]
-    .innerText;
+  const ele =
+    document.getElementsByClassName('divider text')[0].innerText;
   const lang = ele.split('(')[0].trim();
   if (lang.length > 0 && languages[lang]) {
     return languages[lang];
@@ -30,8 +33,9 @@ function findGfgLanguage() {
 }
 
 function findTitle() {
-  const ele = document.querySelector('[class^="problems_header_content__title"] > h3')
-    .innerText;
+  const ele = document.querySelector(
+    '[class^="problems_header_content__title"] > h3',
+  ).innerText;
   if (ele !== null && ele !== undefined) {
     return ele;
   }
@@ -39,7 +43,9 @@ function findTitle() {
 }
 
 function findDifficulty() {
-  const ele = document.querySelectorAll('[class^="problems_header_description"]')[0].children[0].innerText;
+  const ele = document.querySelectorAll(
+    '[class^="problems_header_description"]',
+  )[0].children[0].innerText;
 
   if (ele !== null && ele !== undefined) {
     if (ele.trim() === 'Basic' || ele.trim() === 'School') {
@@ -51,19 +57,22 @@ function findDifficulty() {
 }
 
 function getProblemStatement() {
-  const ele = document.querySelector('[class^="problems_problem_content"]');
+  const ele = document.querySelector(
+    '[class^="problems_problem_content"]',
+  );
   return `${ele.outerHTML}`;
 }
 
 function getCode() {
-
   const scriptContent = `
-  const editor = ace.edit("ace-editor");
-  const editorContent = editor.getValue();
-  const para = document.createElement("pre");
-  para.innerText+=editorContent;
-  para.setAttribute("id","codeDataLeetHub")
-  document.body.appendChild(para);
+  try {
+    const editor = ace.edit("ace-editor");
+    const editorContent = editor.getValue();
+    const para = document.createElement("pre");
+    para.innerText = editorContent;
+    para.setAttribute("id","codeDataLeetHub");
+    document.body.appendChild(para);
+  } catch (e) {}
   `;
 
   const script = document.createElement('script');
@@ -74,19 +83,9 @@ function getCode() {
     document.head ||
     document.documentElement
   ).appendChild(script);
-  const text = document.getElementById('codeDataLeetHub').innerText;
-
-  const nodeDeletionScript = `
-  document.body.removeChild(para)
-  `;
-  const script2 = document.createElement('script');
-  script2.id = 'tmpScript';
-  script2.appendChild(document.createTextNode(nodeDeletionScript));
-  (
-    document.body ||
-    document.head ||
-    document.documentElement
-  ).appendChild(script2);
+  const node = document.getElementById('codeDataLeetHub');
+  const text = node ? node.innerText : '';
+  if (node && node.parentNode) node.parentNode.removeChild(node);
 
   return text || '';
 }
@@ -103,14 +102,22 @@ const gfgLoader = setInterval(() => {
       'practice.geeksforgeeks.org/problems',
     )
   ) {
-
-    const submitBtn = document.evaluate(".//button[text()='Submit']", document.body, null, XPathResult.ANY_TYPE, null).iterateNext();
+    const submitBtn = document
+      .evaluate(
+        ".//button[text()='Submit']",
+        document.body,
+        null,
+        XPathResult.ANY_TYPE,
+        null,
+      )
+      .iterateNext();
 
     submitBtn.addEventListener('click', function () {
       START_MONITOR = true;
       const submission = setInterval(() => {
-        const output = document.querySelectorAll('[class^="problems_content"]')[0]
-          .innerText;
+        const output = document.querySelectorAll(
+          '[class^="problems_content"]',
+        )[0].innerText;
         if (
           output.includes('Problem Solved Successfully') &&
           START_MONITOR
@@ -133,47 +140,31 @@ const gfgLoader = setInterval(() => {
 
           // if language was found
           if (language !== null) {
-            chrome.storage.local.get('stats', (s) => {
-              const { stats } = s;
-              const filePath =
-                probName + toKebabCase(title + language);
-              let sha = null;
-              if (
-                stats !== undefined &&
-                stats.sha !== undefined &&
-                stats.sha[filePath] !== undefined
-              ) {
-                sha = stats.sha[filePath];
-              }
+            uploadGit(
+              btoa(unescape(encodeURIComponent(problemStatement))),
+              probName,
+              'README.md',
+              README_MSG,
+              'upload',
+              undefined,
+              undefined,
+              difficulty,
+            );
 
-              // Only create README if not already created
-              // if (sha === null) {
-              uploadGit(
-                btoa(unescape(encodeURIComponent(problemStatement))),
-                probName,
-                'README.md',
-                README_MSG,
-                'upload',
-                undefined,
-                undefined,
-                difficulty,
-              );
-
-              if (code !== '') {
-                setTimeout(function () {
-                  uploadGit(
-                    btoa(unescape(encodeURIComponent(code))),
-                    probName,
-                    toKebabCase(title + language),
-                    SUBMIT_MSG,
-                    'upload',
-                    undefined,
-                    undefined,
-                    difficulty,
-                  );
-                }, 1000);
-              }
-            });
+            if (code !== '') {
+              setTimeout(function () {
+                uploadGit(
+                  btoa(unescape(encodeURIComponent(code))),
+                  probName,
+                  toKebabCase(title + language),
+                  SUBMIT_MSG,
+                  'upload',
+                  undefined,
+                  undefined,
+                  difficulty,
+                );
+              }, 1000);
+            }
           }
         } else if (output.includes('Compilation Error')) {
           // clear timeout and do nothing

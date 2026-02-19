@@ -21,6 +21,54 @@ const languages = {
   Oracle: '.sql',
 };
 
+const leetCodeApiLangToExt = {
+  python: '.py',
+  python3: '.py',
+  cpp: '.cpp',
+  'c++': '.cpp',
+  c: '.c',
+  java: '.java',
+  javascript: '.js',
+  typescript: '.ts',
+  csharp: '.cs',
+  ruby: '.rb',
+  swift: '.swift',
+  go: '.go',
+  kotlin: '.kt',
+  scala: '.scala',
+  rust: '.rs',
+  php: '.php',
+  mysql: '.sql',
+  mssql: '.sql',
+  'ms sql server': '.sql',
+  oraclesql: '.sql',
+  oracle: '.sql',
+};
+
+function langToExt(apiLangRaw) {
+  const apiLang = String(apiLangRaw || '')
+    .trim()
+    .toLowerCase();
+  if (!apiLang) return null;
+
+  if (leetCodeApiLangToExt[apiLang])
+    return leetCodeApiLangToExt[apiLang];
+
+  // Common variants
+  if (apiLang.startsWith('python')) return '.py';
+  if (apiLang === 'py') return '.py';
+  if (apiLang.includes('javascript')) return '.js';
+  if (apiLang.includes('typescript')) return '.ts';
+  if (apiLang.includes('csharp') || apiLang === 'c#') return '.cs';
+  if (apiLang.includes('golang') || apiLang === 'go') return '.go';
+  if (apiLang.includes('c++') || apiLang === 'cpp') return '.cpp';
+  if (apiLang === 'mysql' || apiLang.includes('sql')) return '.sql';
+  if (apiLang === 'bash' || apiLang === 'shell') return '.sh';
+
+  // Fallback: keep it conservative; unknown means skip.
+  return null;
+}
+
 /* Commit messages */
 const readmeMsg = 'Create README - LeetHub';
 const discussionMsg = 'Prepend discussion post - LeetHub';
@@ -86,7 +134,11 @@ const upload = (
 
         chrome.storage.local.get('stats', (data2) => {
           let { stats } = data2;
-          if (stats === null || stats === undefined || Object.keys(stats).length === 0) {
+          if (
+            stats === null ||
+            stats === undefined ||
+            Object.keys(stats).length === 0
+          ) {
             // create stats object
             stats = {};
             stats.solved = 0;
@@ -301,7 +353,7 @@ function findCode(
             which has the full code */
             const firstIndex = text.indexOf('submissionCode');
             const lastIndex = text.indexOf('editCodeUrl');
-            const slicedText = text.slice(firstIndex, lastIndex);
+            let slicedText = text.slice(firstIndex, lastIndex);
             /* slicedText has code as like as. (submissionCode: 'Details code'). */
             /* So finding the index of first and last single inverted coma. */
             const firstInverted = slicedText.indexOf("'");
@@ -366,21 +418,6 @@ function findCode(
     xhttp.open('GET', submissionURL, true);
     xhttp.send();
   }
-}
-
-/* Main parser function for the code */
-function parseCode() {
-  const e = document.getElementsByClassName('CodeMirror-code');
-  if (e !== undefined && e.length > 0) {
-    const elem = e[0];
-    let parsedCode = '';
-    const textArr = elem.innerText.split('\n');
-    for (let i = 1; i < textArr.length; i += 2) {
-      parsedCode += `${textArr[i]}\n`;
-    }
-    return parsedCode;
-  }
-  return null;
 }
 
 /* Util function to check if an element exists */
@@ -478,9 +515,8 @@ function parseQuestion() {
     const markdown = `<h2><a href="${questionUrl}">${qtitle}</a></h2><h3>${difficulty}</h3><hr>${qbody}`;
     return markdown;
   } else if (checkElem(questionDescriptionElem)) {
-    let questionTitle = document.getElementsByClassName(
-      'question-title',
-    );
+    let questionTitle =
+      document.getElementsByClassName('question-title');
     if (checkElem(questionTitle)) {
       questionTitle = questionTitle[0].innerText;
     } else {
@@ -513,17 +549,19 @@ function parseStats() {
 
 document.addEventListener('click', (event) => {
   const element = event.target;
+  if (!(element instanceof Element)) {
+    return;
+  }
+  const parent = element.parentElement;
   const oldPath = window.location.pathname;
 
   /* Act on Post button click */
   /* Complex since "New" button shares many of the same properties as "Post button */
   if (
     element.classList.contains('icon__3Su4') ||
-    element.parentElement.classList.contains('icon__3Su4') ||
-    element.parentElement.classList.contains(
-      'btn-content-container__214G',
-    ) ||
-    element.parentElement.classList.contains('header-right__2UzF')
+    parent?.classList?.contains('icon__3Su4') ||
+    parent?.classList?.contains('btn-content-container__214G') ||
+    parent?.classList?.contains('header-right__2UzF')
   ) {
     setTimeout(function () {
       /* Only post if post button was clicked and url changed */
@@ -583,8 +621,7 @@ function getNotesIfAny() {
   return notes.trim();
 }
 
-const loader = setInterval(() => {
-  let code = null;
+setInterval(() => {
   let probStatement = null;
   let probStats = null;
   let probType;
@@ -620,10 +657,10 @@ const loader = setInterval(() => {
   if (probStatement !== null) {
     switch (probType) {
       case NORMAL_PROBLEM:
-        successTag[0].classList.add('marked_as_success');
+        successTag[0]?.classList?.add('marked_as_success');
         break;
       case EXPLORE_SECTION_PROBLEM:
-        resultState.classList.add('marked_as_success');
+        resultState?.classList?.add('marked_as_success');
         break;
       default:
         console.error(`Unknown problem type ${probType}`);

@@ -4,7 +4,6 @@ about: Report a problem with the extension
 title: ''
 labels: bug
 assignees: ''
-
 ---
 
 ## Bug report
@@ -12,6 +11,7 @@ assignees: ''
 **What happened?**
 
 **Steps to reproduce**
+
 1.
 2.
 3.
@@ -19,9 +19,11 @@ assignees: ''
 **Expected behavior**
 
 **Environment**
+
 - Browser + version:
 - Extension version:
 - OS:
 
 **Logs (optional)**
+
 - `chrome://extensions` → LeetHub → Service worker → Inspect → Console

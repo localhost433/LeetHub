@@ -4,7 +4,6 @@ about: Suggest a change or improvement
 title: ''
 labels: ''
 assignees: ''
-
 ---
 
 ## Feature request
