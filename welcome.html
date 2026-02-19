@@ -1,39 +1,38 @@
 <!doctype html>
 <html>
   <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1"
+    />
+    <title>LeetHub Setup</title>
     <link rel="stylesheet" href="css/welcome.css" />
   </head>
 
   <body>
-    <div>
-      <div>
-        <br />
-        <p class="caption" style="font-size: 9em">
-          Leet<span style="color: orange">Hub</span>
-        </p>
-        <p class="caption">
+    <main class="page">
+      <header class="hero">
+        <div class="logo" aria-label="LeetHub">
+          Leet<span class="logo-accent">Hub</span>
+        </div>
+        <p class="tagline">
           Automatically sync your code from LeetCode to GitHub
         </p>
-        <br /><br /><br /><br /><br /><br /><br /><br />
-        <p hidden id="error"></p>
-        <p hidden id="success"></p>
-        <p hidden id="unlink">
+
+        <p hidden id="error" class="notice notice--error"></p>
+        <p hidden id="success" class="notice notice--success"></p>
+        <p hidden id="unlink" class="notice notice--link">
           Linked the wrong repo? <a>Unlink</a>.
         </p>
-      </div>
+      </header>
 
       <!-- Create Hook -->
-      <div
-        style="display: none"
-        id="hook_mode"
-        class="ui grid container"
-      >
-        <div>
-          <p class="caption ui large header center aligned">
-            To get started with LeetHub
-          </p>
-        </div>
-        <div>
+      <section style="display: none" id="hook_mode" class="card">
+        <h2 class="card-title">To get started with LeetHub</h2>
+
+        <div class="form-row">
+          <label for="type">Repository</label>
           <select id="type">
             <option value="">Pick an Option</option>
             <option value="new">
@@ -42,7 +41,9 @@
             <option value="link">Link an Existing Repository</option>
           </select>
         </div>
-        <div>
+
+        <div class="form-row">
+          <label for="name">Repository name</label>
           <input
             autocomplete="off"
             id="name"
@@ -51,8 +52,7 @@
           />
         </div>
 
-        <div>
-          <br />
+        <div class="actions">
           <button
             id="hook_button"
             disabled
@@ -61,38 +61,66 @@
             Get Started
           </button>
         </div>
-      </div>
+      </section>
 
       <!-- Show stats -->
-      <div
-        style="display: none"
-        id="commit_mode"
-        class="ui grid container"
-      >
-        <div>
-          <br /><br />
-          <div
-            style="font-size: 2.3em"
-            class="ui inverted large header"
-          >
+      <section style="display: none" id="commit_mode" class="card">
+        <div class="stats">
+          <div class="stat-line">
             Problems Solved: <span id="p_solved">0</span>
           </div>
-          <div
-            styl="font-size: 2.3em"
-            class="ui inverted large header"
-          >
-            <span style="color: #5cb85c">Easy:</span>
-            <span id="p_solved_easy" style="color: #5cb85c">0 </span>
-            <span style="color: #f0ad4e">&ensp; &ensp; Medium:</span>
-            <span id="p_solved_medium" style="color: #f0ad4e"
-              >0
-            </span>
-            <span style="color: #d9534f">&ensp; &ensp; Hard:</span>
-            <span id="p_solved_hard" style="color: #d9534f">0 </span>
+          <div class="stat-line">
+            <span class="stat stat--easy">Easy:</span>
+            <span id="p_solved_easy" class="stat stat--easy">0</span>
+            <span class="stat stat--medium"
+              >&ensp; &ensp; Medium:</span
+            >
+            <span id="p_solved_medium" class="stat stat--medium"
+              >0</span
+            >
+            <span class="stat stat--hard">&ensp; &ensp; Hard:</span>
+            <span id="p_solved_hard" class="stat stat--hard">0</span>
           </div>
         </div>
-      </div>
-    </div>
+
+        <div class="divider"></div>
+
+        <h3 class="section-title">LeetCode import</h3>
+
+        <div class="form-row">
+          <label for="lc_import_mode">Mode</label>
+          <select id="lc_import_mode">
+            <option value="latest_per_lang">
+              Latest accepted per language
+            </option>
+            <option value="all_submissions">
+              All accepted submissions (keep all)
+            </option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label for="lc_import_scope">Apply to</label>
+          <select id="lc_import_scope">
+            <option value="backfill_only">Backfill only</option>
+            <option value="backfill_and_new">
+              Backfill + new accepts
+            </option>
+          </select>
+        </div>
+
+        <div class="actions">
+          <button id="lc_import_save" class="positive ui button">
+            Save
+          </button>
+          <span
+            hidden
+            id="lc_import_notice"
+            class="notice-inline"
+          ></span>
+        </div>
+      </section>
+    </main>
 
     <script type="text/javascript" src="scripts/welcome.js"></script>
   </body>

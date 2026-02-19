@@ -1,29 +1,107 @@
-function handleMessage(request, sender) {
-  if (!request || request.closeWebPage !== true) return;
+/* eslint-disable no-undef */
 
-  if (request.isSuccess === true) {
-    chrome.storage.local.set({ leethub_username: request.username });
-    chrome.storage.local.set({ leethub_token: request.token });
-    chrome.storage.local.set({ pipe_leethub: false }, () => {
-      console.log('Closed pipe.');
+/**
+ * Handles incoming messages from content scripts or authorize.js
+ */
+chrome.runtime.onMessage.addListener(
+  (request, sender, sendResponse) => {
+    if (request.action === 'upload') {
+      handleUpload(request).then(sendResponse);
+      return true; // Keep channel open for async response
+    }
+    if (request.action === 'get') {
+      handleGet(request).then(sendResponse);
+      return true;
+    }
+
+    if (request && request.closeWebPage === true) {
+      handleAuthMessage(request, sender);
+    }
+  },
+);
+/* ... existing code ... */
+async function handleGet(request) {
+  const { directory, filename, hook } = request;
+  const { leethub_token } =
+    await chrome.storage.local.get('leethub_token');
+
+  if (!leethub_token) {
+    return {
+      status: 401,
+      error: 'No LeetHub token found in storage',
+    };
+  }
+
+  const URL = `https://api.github.com/repos/${hook}/contents/${directory}/${filename}`;
+
+  try {
+    const response = await fetch(URL, {
+      method: 'GET',
+      headers: {
+        Authorization: `token ${leethub_token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
     });
 
-    if (sender && sender.tab && typeof sender.tab.id === 'number') {
-      chrome.tabs.remove(sender.tab.id);
-    }
+    const data = await response.json();
 
-    const urlOnboarding = chrome.runtime.getURL('welcome.html');
-    chrome.tabs.create({ url: urlOnboarding, active: true });
-    return;
-  }
-
-  if (request.isSuccess === false) {
-    console.error('LeetHub auth failed.');
-    chrome.storage.local.set({ pipe_leethub: false });
-    if (sender && sender.tab && typeof sender.tab.id === 'number') {
-      chrome.tabs.remove(sender.tab.id);
+    if (response.ok) {
+      return { status: response.status, data };
+    } else {
+      console.error('GitHub Get Failed', data);
+      return { status: response.status, error: data.message };
     }
+  } catch (error) {
+    console.error('Network Error', error);
+    return { status: 500, error: error.message };
   }
 }
+/* ... existing code ... */
+async function handleUpload(request) {
+  const { content, directory, filename, msg, sha, hook } = request;
+  const { leethub_token } =
+    await chrome.storage.local.get('leethub_token');
 
-chrome.runtime.onMessage.addListener(handleMessage);
+  if (!leethub_token) {
+    return {
+      status: 401,
+      error: 'No LeetHub token found in storage',
+    };
+  }
+
+  const URL = `https://api.github.com/repos/${hook}/contents/${directory}/${filename}`;
+  const body = {
+    message: msg,
+    content: content,
+  };
+  if (sha) {
+    body.sha = sha;
+  }
+
+  try {
+    const response = await fetch(URL, {
+      method: 'PUT',
+      headers: {
+        Authorization: `token ${leethub_token}`,
+        Accept: 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json();
+
+    if (response.ok || response.status === 201) {
+      return { status: response.status, data };
+    } else {
+      console.error('GitHub Upload Failed', data);
+      return {
+        status: response.status,
+        error: data.message || 'Unknown error',
+      };
+    }
+  } catch (error) {
+    console.error('Network Error', error);
+    return { status: 500, error: error.message };
+  }
+}

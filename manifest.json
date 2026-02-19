@@ -3,7 +3,7 @@
   "name": "LeetHub",
   "description": "Automatically integrate your Leetcode & GeeksforGeeks submissions to GitHub",
   "homepage_url": "https://github.com/localhost433/LeetHub",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "author": "Qasim Wani, Robin Chen",
   "action": {
     "default_icon": "assets/thumbnail.png",
@@ -27,12 +27,26 @@
   "content_scripts": [
     {
       "matches": ["https://leetcode.com/*"],
-      "js": ["scripts/leetcode.js"],
+      "js": [
+        "scripts/constants.js",
+        "scripts/common.js",
+        "scripts/services/storage-service.js",
+        "scripts/services/github-service.js",
+        "scripts/adapters/leetcode-adapter.js",
+        "scripts/leetcode-import.js",
+        "scripts/leetcode.js"
+      ],
       "run_at": "document_idle"
     },
     {
       "matches": ["https://practice.geeksforgeeks.org/*"],
-      "js": ["scripts/gfg.js"],
+      "js": [
+        "scripts/constants.js",
+        "scripts/common.js",
+        "scripts/services/storage-service.js",
+        "scripts/services/github-service.js",
+        "scripts/gfg.js"
+      ],
       "run_at": "document_idle"
     },
     {

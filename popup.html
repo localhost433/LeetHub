@@ -67,6 +67,30 @@
 
           <p id="import_status" class="muted" hidden></p>
 
+          <div class="divider"><span>LeetCode import</span></div>
+
+          <label class="label" for="lc_import_mode">Mode</label>
+          <select id="lc_import_mode" class="input">
+            <option value="latest_per_lang">
+              Latest accepted per language
+            </option>
+            <option value="all_submissions">
+              All accepted submissions (keep all)
+            </option>
+          </select>
+
+          <label class="label" for="lc_import_scope">Apply to</label>
+          <select id="lc_import_scope" class="input">
+            <option value="backfill_only">Backfill only</option>
+            <option value="backfill_and_new">
+              Backfill + new accepts
+            </option>
+          </select>
+          <p class="hint">
+            Changing this won’t restart a finished import; use “Retry
+            import”.
+          </p>
+
           <div class="row" style="display: flex; gap: 8px">
             <button
               id="refresh_status"

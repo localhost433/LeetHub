@@ -2,11 +2,33 @@
 
 Chrome extension (Manifest V3) that commits your accepted solutions from LeetCode and GeeksforGeeks to a GitHub repository.
 
+## Credits
+
+This project is a fork in the LeetHub ecosystem:
+
+- Original LeetHub by Qasim Wani: https://github.com/QasimWani/LeetHub
+- LeetHub-3.0 reference implementation (LeetCode.com + LeetCode.cn): https://github.com/raphaelheinz/LeetHub-3.0
+
 ## What it does
 
-- When you get an **Accepted** submission, the extension creates/updates a folder for that problem in your configured GitHub repo.
-- It uploads your solution file(s) and a `README.md` for the problem.
-- It tracks solved counts and file SHAs in `chrome.storage.local` to avoid duplicate commits.
+- **Automated Submission Handling**: When you submit a solution on LeetCode or GeeksforGeeks and it gets **Accepted**, the extension automatically creates/updates a folder for that problem in your configured GitHub repo.
+- **Manual Import**: You can manually import your existing accepted solutions from LeetCode by clicking the "Sync" button in the extension popup. This does *not* happen automatically to prevent unwanted commits.
+- **Deduplication**: It tracks solved counts and file SHAs in `chrome.storage.local` to avoid duplicate commits.
+
+## Comparison vs LeetHub-3.0
+
+LeetHub-3.0 (raphaelheinz) focuses on LeetCode compatibility and adds:
+
+- **LeetCode.cn** support in addition to LeetCode.com.
+- A **manual synchronization** button (including syncing previously-selected submissions).
+- Notes about UI compatibility (old layout vs dynamic layout).
+
+This fork’s notable additions/changes:
+
+- **Manifest V3 + stricter CSP** with PAT-first auth (fine-grained PAT recommended).
+- **Repo sync seeding**: scans an existing repo and seeds `stats.sha` to avoid duplicate uploads.
+- **Manual Backfill**: imports existing accepted solutions from LeetCode only when explicitly triggered.
+- **Multi-accepted handling options**: latest accepted per language, or keep all accepted submissions (suffix filenames with `_<submissionId>`).
 
 ## Install (unpacked)
 
@@ -93,5 +115,6 @@ Goal: create a token that can only write to **one** repository.
 
 Notes:
 
+- OAuth in this repo uses a fixed GitHub OAuth **client id**; for forks (this being one), OAuth may not work. Using a **fine-grained PAT** avoids this.
 - If your repo is owned by an organization, the org may need to allow/approve fine-grained PATs.
 - If you get `403` errors while uploading, your token likely lacks **Contents: Read and write** or the repo wasn’t selected.

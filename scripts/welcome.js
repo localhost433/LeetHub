@@ -195,6 +195,10 @@ const statusCode = (res, status, name) => {
             uploaded: 0,
             ts: Date.now(),
           },
+          leetcode_import_settings: {
+            mode: 'latest_per_lang',
+            scope: 'backfill_only',
+          },
         },
         () => {
           console.log('Successfully set new repo hook');
@@ -444,6 +448,10 @@ const linkRepo = (token, name) => {
                 uploaded: 0,
                 ts: Date.now(),
               },
+              leetcode_import_settings: {
+                mode: 'latest_per_lang',
+                scope: 'backfill_only',
+              },
             },
             () => {
               console.log('Successfully set new repo hook');
@@ -628,3 +636,61 @@ chrome.storage.local.get('mode_type', (data) => {
     document.getElementById('commit_mode').style.display = 'none';
   }
 });
+
+function normalizeLeetCodeImportSettings(raw) {
+  const modeRaw = raw && typeof raw === 'object' ? raw.mode : null;
+  const scopeRaw = raw && typeof raw === 'object' ? raw.scope : null;
+  return {
+    mode:
+      modeRaw === 'all_submissions' || modeRaw === 'latest_per_lang'
+        ? modeRaw
+        : 'latest_per_lang',
+    scope:
+      scopeRaw === 'backfill_and_new' || scopeRaw === 'backfill_only'
+        ? scopeRaw
+        : 'backfill_only',
+  };
+}
+
+function initLeetCodeImportSettingsUI() {
+  const modeEl = document.getElementById('lc_import_mode');
+  const scopeEl = document.getElementById('lc_import_scope');
+  const saveEl = document.getElementById('lc_import_save');
+  const noticeEl = document.getElementById('lc_import_notice');
+  if (!modeEl || !scopeEl || !saveEl) return;
+
+  chrome.storage.local.get('leetcode_import_settings', (s) => {
+    const normalized = normalizeLeetCodeImportSettings(
+      s?.leetcode_import_settings,
+    );
+    modeEl.value = normalized.mode;
+    scopeEl.value = normalized.scope;
+    if (!s?.leetcode_import_settings) {
+      chrome.storage.local.set({
+        leetcode_import_settings: normalized,
+      });
+    }
+  });
+
+  saveEl.addEventListener('click', () => {
+    const next = normalizeLeetCodeImportSettings({
+      mode: modeEl.value,
+      scope: scopeEl.value,
+    });
+    chrome.storage.local.set(
+      { leetcode_import_settings: next },
+      () => {
+        if (noticeEl) {
+          noticeEl.textContent = 'Saved.';
+          noticeEl.hidden = false;
+          setTimeout(() => {
+            noticeEl.hidden = true;
+          }, 1500);
+        }
+      },
+    );
+  });
+}
+
+// Safe to call early; it no-ops unless elements exist.
+initLeetCodeImportSettingsUI();

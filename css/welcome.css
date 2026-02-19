@@ -1,9 +1,178 @@
 body {
   background-color: #000000 !important;
-  padding: 10px;
-  text-align: center;
+  margin: 0;
+  padding: 0;
   transition: background-color 0.75s ease;
   font-family: 'Helvetica Neue', 'Lucida Grande', sans-serif;
+  color: white;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 16px 40px;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.logo {
+  font-family:
+    'Norwester', 'Helvetica Neue', 'Lucida Grande', sans-serif;
+  font-size: clamp(56px, 10vw, 104px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin: 6px 0 10px;
+}
+
+.logo-accent {
+  color: orange;
+}
+
+.tagline {
+  margin: 0;
+  opacity: 0.9;
+}
+
+.card {
+  text-align: left;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+.card-title {
+  font-size: 18px;
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.section-title {
+  font-size: 16px;
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+
+.divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 16px 0;
+}
+
+.form-row {
+  margin-top: 12px;
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  opacity: 0.9;
+  margin-bottom: 6px;
+}
+
+input[type='text'],
+select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+  color: white;
+  outline: none;
+}
+
+input[type='text']::placeholder {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+input[type='text']:focus,
+select:focus {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.actions {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+button {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notice {
+  margin: 12px auto 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  width: fit-content;
+  max-width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.notice--error {
+  color: #ffb4b4;
+}
+
+.notice--success {
+  color: #bff6c8;
+}
+
+.notice--link {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.notice-inline {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.stats {
+  margin-bottom: 2px;
+}
+
+.stat-line {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.stat {
+  font-weight: 700;
+}
+
+.stat--easy {
+  color: #5cb85c;
+}
+
+.stat--medium {
+  color: #f0ad4e;
+}
+
+.stat--hard {
+  color: #d9534f;
 }
 
 #title {
@@ -13,40 +182,6 @@ body {
   font-weight: bold;
   margin-bottom: 0px;
   margin-top: 10px;
-}
-
-.caption {
-  font-family:
-    'Norwester', 'Helvetica Neue', 'Lucida Grande', sans-serif;
-  font-size: 1.5em;
-  font-weight: normal !important;
-  margin-top: 3px !important;
-  margin-bottom: 0px;
-}
-#error {
-  font-family:
-    'Norwester', 'Helvetica Neue', 'Lucida Grande', sans-serif;
-  font-weight: normal !important;
-  color: red !important;
-  margin-bottom: 0px;
-}
-
-#success {
-  font-family:
-    'Norwester', 'Helvetica Neue', 'Lucida Grande', sans-serif;
-  font-size: 1.1em;
-  font-weight: normal !important;
-  color: green !important;
-  margin-bottom: 0px;
-}
-
-#unlink {
-  font-family:
-    'Norwester', 'Helvetica Neue', 'Lucida Grande', sans-serif;
-  font-size: 1.1em;
-  font-weight: normal !important;
-  color: green !important;
-  margin-bottom: 0px;
 }
 
 p {
@@ -62,4 +197,8 @@ p {
 a {
   color: white !important;
   cursor: pointer;
+}
+
+a:hover {
+  text-decoration: underline;
 }
