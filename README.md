@@ -83,13 +83,13 @@ Goal: create a token that can only write to **one** repository.
 2. Under **Token name**, pick any name (e.g. `leethub`).
 3. Set an **Expiration** (recommended).
 4. Under **Repository access**, choose:
-   - **Only select repositories** → pick the repo you want LeetHub to write to.
-5. Under **Permissions** → **Repository permissions**, set:
+   - **Only select repositories** -> pick the repo you want LeetHub to write to.
+5. Under **Permissions** -> **Repository permissions**, set:
    - **Contents**: **Read and write**
    - **Metadata**: **Read-only** (usually required)
 6. Click **Generate token**.
 7. Copy it immediately (GitHub won’t show it again).
-8. In the extension popup → paste into **Fine-grained token** → click **Save token**.
+8. In the extension popup -> paste into **Fine-grained token** -> click **Save token**.
 
 Notes:
 

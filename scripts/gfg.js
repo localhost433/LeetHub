@@ -158,7 +158,6 @@ const gfgLoader = setInterval(() => {
                 undefined,
                 difficulty,
               );
-              // }
 
               if (code !== '') {
                 setTimeout(function () {
