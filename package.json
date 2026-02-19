@@ -1,6 +1,6 @@
 {
   "name": "LeetHub",
-  "version": "0.0.9",
+  "version": "1.2.0",
   "private": true,
   "description": "Automatically integrate your code with LeetCode and GitHub",
   "scripts": {
@@ -8,9 +8,11 @@
     "format": "prettier --write .",
     "format-test": "prettier --check .",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
-    "lint-test": "eslint . --ext .js,.jsx,.ts,.tsx"
+    "lint-test": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "test": "jest"
   },
   "devDependencies": {
+    "ajv": "^8.18.0",
     "eslint": "^8.57.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-prettier": "^9.1.0",
@@ -19,7 +21,11 @@
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-react": "^7.34.1",
     "eslint-plugin-react-hooks": "^4.6.2",
+    "jest": "^30.2.0",
     "prettier": "^3.3.3"
   },
-  "dependencies": {}
+  "overrides": {
+    "minimatch": "^10.2.1"
+  }
 }
+
