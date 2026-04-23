@@ -1,5 +1,4 @@
 // Service for handling chrome.storage interactions
-// Encapsulates keys and access patterns
 (function(window) {
   const StorageService = {
     // Keys used in local storage
@@ -30,7 +29,7 @@
         });
       } catch (e) {
         console.error('StorageService: Failed to get data', e);
-        return null; // Return null on error
+        return null; 
       }
     },
 
@@ -62,7 +61,6 @@
       }
     },
     
-    // Specific helpers
     async getStats() {
       const result = await this.get(this.KEYS.STATS);
       return result ? result[this.KEYS.STATS] : null;
@@ -73,7 +71,6 @@
     }
   };
 
-  // Expose globally
   window.LeetHubStorageService = StorageService;
 
 })(window);

@@ -3,22 +3,28 @@
 /**
  * Handles incoming messages from content scripts or authorize.js
  */
-chrome.runtime.onMessage.addListener(
-  (request, sender, sendResponse) => {
-    if (request.action === 'upload') {
-      handleUpload(request).then(sendResponse);
-      return true; // Keep channel open for async response
-    }
-    if (request.action === 'get') {
-      handleGet(request).then(sendResponse);
-      return true;
-    }
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  routeMessage(request).then(sendResponse).catch(err => {
+      console.error("Background error:", err);
+      sendResponse({ error: err.message });
+  });
+  return true; // async
+});
 
+async function routeMessage(request) {
     if (request && request.closeWebPage === true) {
-      handleAuthMessage(request, sender);
+        return handleAuthMessage(request);
     }
-  },
-);
+    switch (request.action) {
+        case 'upload':
+            return handleUpload(request);
+        case 'get':
+            return handleGet(request);
+        default:
+             // If it's an auth message or other legacy message, handle it or ignore
+             return null;
+    }
+}
 /* ... existing code ... */
 async function handleGet(request) {
   const { directory, filename, hook } = request;

@@ -82,50 +82,17 @@ function isExtensionContextInvalidatedError(err) {
 }
 
 async function safeStorageGet(keys) {
-  if (
-    !globalThis.chrome ||
-    !chrome.storage ||
-    !chrome.storage.local ||
-    typeof chrome.storage.local.get !== 'function'
-  ) {
-    return null;
-  }
-  try {
-    return await chrome.storage.local.get(keys);
-  } catch (e) {
-    if (isExtensionContextInvalidatedError(e)) return null;
-    const msg = e && e.message ? String(e.message) : String(e);
-    if (
-      msg.includes('Cannot read properties of undefined') &&
-      msg.includes('local')
-    )
-      return null;
-    throw e;
-  }
+  return new Promise((resolve) => {
+      chrome.storage.local.get(keys, resolve);
+  });
 }
 
-async function safeStorageSet(items) {
-  if (
-    !globalThis.chrome ||
-    !chrome.storage ||
-    !chrome.storage.local ||
-    typeof chrome.storage.local.set !== 'function'
-  ) {
-    return false;
-  }
-  try {
-    await chrome.storage.local.set(items);
-    return true;
-  } catch (e) {
-    if (isExtensionContextInvalidatedError(e)) return false;
-    const msg = e && e.message ? String(e.message) : String(e);
-    if (
-      msg.includes('Cannot read properties of undefined') &&
-      msg.includes('local')
-    )
-      return false;
-    throw e;
-  }
+function safeStorageSet(items) {
+    return new Promise((resolve) => {
+        chrome.storage.local.set(items, () => {
+             resolve(true); 
+        });
+    });
 }
 
 function getCookieValue(name) {

@@ -59,13 +59,11 @@
       for (const script of scripts) {
         const text = script.textContent;
         if (text.includes('pageData')) {
-          // Extract code with regex
           const codeMatch = text.match(/submissionCode:\s*'([^']+)'/);
           if (codeMatch && codeMatch[1]) {
             code = this._decodeUnicode(codeMatch[1]);
           }
 
-          // Extract stats if available in the same block
           const runtimeMatch = text.match(/runtime:\s*'([^']+)'/);
           if (runtimeMatch) runtime = runtimeMatch[1];
 
@@ -77,9 +75,6 @@
       }
 
       if (!code) {
-        // Fallback or error?
-        // Sometimes code is not in pageData for newer views?
-        // But for now we stick to original logic.
         throw new Error('Code not found in submission page');
       }
 

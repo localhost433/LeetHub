@@ -553,6 +553,9 @@ async function maybeImportExistingLeetCodeSolutions() {
             skip,
           },
         });
+        
+        // Automatically continue to next batch
+        setTimeout(maybeImportExistingLeetCodeSolutions, 5000);
       }
     } catch (e) {
       // Leave state as not-done so we can retry later.
