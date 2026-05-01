@@ -147,12 +147,15 @@ function monitorSubmissionResult() {
 
         if (code !== '') {
           setTimeout(function () {
+            const gfgCommitMsg = difficulty
+              ? `${submitMsg} - ${title} | ${difficulty}`
+              : `${submitMsg} - ${title}`;
             // Upload Code
             GitHub.uploadSolution(
               code, // pass raw string
               probName,
               toKebabCase(title + language),
-              submitMsg,
+              gfgCommitMsg,
               'upload',
               difficulty
             );

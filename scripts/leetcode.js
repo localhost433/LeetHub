@@ -124,7 +124,7 @@
       const readmeSha = shaMap[readmeKey] || null;
       const hadAnyCodeBefore = hasAnyCodeShaForFolder(shaMap, folder);
 
-      const commitMsg = `${submitMsg} - ${title}`;
+      const commitMsg = buildCommitMsg(title, difficulty, submission.runtimePercentile, submission.memoryPercentile);
       const readmeContent = `# ${padProblemId(frontendId) || ''}. ${title}\n## ${difficulty}\n\nhttps://leetcode.com/problems/${slug}/\n`;
 
       // Upload README (best-effort)
@@ -175,15 +175,23 @@
     }
   }
 
+  function buildCommitMsg(title, difficulty, runtimePct, memoryPct) {
+    let msg = `${submitMsg} - ${title}`;
+    if (difficulty) msg += ` | ${difficulty}`;
+    if (runtimePct != null) msg += ` | Runtime: ${runtimePct.toFixed(2)}%`;
+    if (memoryPct != null) msg += ` | Memory: ${memoryPct.toFixed(2)}%`;
+    return msg;
+  }
+
   /**
    * Fetch submission details via GraphQL.
-   * Returns { accepted, code, lang } or null on failure.
+   * Returns { accepted, code, lang, runtimePercentile, memoryPercentile } or null on failure.
    * Falls back to REST API if GraphQL returns no code.
    */
   async function fetchSubmissionDetails(submissionId) {
     const idNum = Number(submissionId);
     const query =
-      'query leethubSubDetails($submissionId: Int!) { submissionDetails(submissionId: $submissionId) { statusCode code lang { name } } }';
+      'query leethubSubDetails($submissionId: Int!) { submissionDetails(submissionId: $submissionId) { statusCode code lang { name } runtimePercentile memoryPercentile } }';
 
     const res = await leetCodeGraphQL(query, { submissionId: idNum });
     const d = res?.json?.data?.submissionDetails;
@@ -193,6 +201,8 @@
         accepted: d.statusCode === 10,
         code: d.code,
         lang: d.lang?.name || '',
+        runtimePercentile: d.runtimePercentile ?? null,
+        memoryPercentile: d.memoryPercentile ?? null,
       };
     }
 
@@ -206,6 +216,8 @@
       accepted: true,
       code: rest.code,
       lang: rest.lang || '',
+      runtimePercentile: null,
+      memoryPercentile: null,
     };
   }
 
