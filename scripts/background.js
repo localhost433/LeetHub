@@ -1,5 +1,9 @@
 /* eslint-disable no-undef */
 
+const RETRY_QUEUE_KEY = 'leethub_retry_queue';
+const MAX_ATTEMPTS = 2;
+const RETRY_ALARM = 'leethub_retry';
+
 /**
  * Handles incoming messages from content scripts or authorize.js
  */
@@ -62,27 +66,64 @@ async function handleGet(request) {
     return { status: 500, error: error.message };
   }
 }
-/* ... existing code ... */
-async function handleUpload(request) {
-  const { content, directory, filename, msg, sha, hook } = request;
-  const { leethub_token } =
-    await chrome.storage.local.get('leethub_token');
+
+// ---------------------------------------------------------------------------
+// Retry queue
+// ---------------------------------------------------------------------------
+
+function isRetryable(status) {
+  return status === 429 || status === 500 || status === 502 || status === 503;
+}
+
+async function enqueueRetry(request) {
+  const stored = await chrome.storage.local.get(RETRY_QUEUE_KEY);
+  const queue = stored[RETRY_QUEUE_KEY] || [];
+  queue.push({ request, attempts: 1 });
+  await chrome.storage.local.set({ [RETRY_QUEUE_KEY]: queue });
+  chrome.alarms.create(RETRY_ALARM, { delayInMinutes: 1 });
+}
+
+async function processRetryQueue() {
+  const stored = await chrome.storage.local.get(RETRY_QUEUE_KEY);
+  const queue = stored[RETRY_QUEUE_KEY] || [];
+  if (!queue.length) return;
+
+  const remaining = [];
+  for (const item of queue) {
+    const result = await attemptUpload(item.request);
+    if (result.status === 200 || result.status === 201) {
+      console.log(`LeetHub: Retry succeeded for ${item.request.filename}`);
+    } else if (item.attempts < MAX_ATTEMPTS && isRetryable(result.status)) {
+      remaining.push({ ...item, attempts: item.attempts + 1 });
+    } else {
+      console.error(`LeetHub: Dropping ${item.request.filename} after ${item.attempts} attempt(s)`);
+    }
+  }
+
+  await chrome.storage.local.set({ [RETRY_QUEUE_KEY]: remaining });
+  if (remaining.length) {
+    chrome.alarms.create(RETRY_ALARM, { delayInMinutes: 2 });
+  }
+}
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === RETRY_ALARM) processRetryQueue();
+});
+
+// ---------------------------------------------------------------------------
+// Upload
+// ---------------------------------------------------------------------------
+
+async function attemptUpload({ content, directory, filename, msg, sha, hook }) {
+  const { leethub_token } = await chrome.storage.local.get('leethub_token');
 
   if (!leethub_token) {
-    return {
-      status: 401,
-      error: 'No LeetHub token found in storage',
-    };
+    return { status: 401, error: 'No LeetHub token found in storage' };
   }
 
   const URL = `https://api.github.com/repos/${hook}/contents/${directory}/${filename}`;
-  const body = {
-    message: msg,
-    content: content,
-  };
-  if (sha) {
-    body.sha = sha;
-  }
+  const body = { message: msg, content };
+  if (sha) body.sha = sha;
 
   try {
     const response = await fetch(URL, {
@@ -99,15 +140,24 @@ async function handleUpload(request) {
 
     if (response.ok || response.status === 201) {
       return { status: response.status, data };
-    } else {
-      console.error('GitHub Upload Failed', data);
-      return {
-        status: response.status,
-        error: data.message || 'Unknown error',
-      };
     }
+
+    console.error('GitHub Upload Failed', data);
+    return { status: response.status, error: data.message || 'Unknown error' };
   } catch (error) {
     console.error('Network Error', error);
     return { status: 500, error: error.message };
   }
+}
+
+/* ... existing code ... */
+async function handleUpload(request) {
+  const { content, directory, filename, msg, sha, hook } = request;
+  const result = await attemptUpload({ content, directory, filename, msg, sha, hook });
+
+  if (isRetryable(result.status)) {
+    await enqueueRetry({ content, directory, filename, msg, sha, hook });
+  }
+
+  return result;
 }
