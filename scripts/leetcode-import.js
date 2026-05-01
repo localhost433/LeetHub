@@ -396,7 +396,7 @@ async function maybeImportExistingLeetCodeSolutions() {
 
           const readme = `# ${padProblemId(item.frontendId) || ''}. ${title}\n## ${difficultyImport}\n\nhttps://leetcode.com/problems/${titleSlug}/\n`;
 
-          const readmeKey = folder + 'README.md';
+          const readmeKey = `${folder}/README.md`;
           const readmeSha = knownSha[readmeKey] || null;
           const codeSha = knownSha[codeFilePathKey] || null;
 
@@ -515,13 +515,13 @@ async function maybeImportExistingLeetCodeSolutions() {
         const allSkipped =
           uploadedCount === 0 &&
           skip.no_meta +
-            skip.no_accepted +
-            skip.unauthorized +
-            skip.unknown_lang +
-            skip.no_code +
-            skip.already_present +
-            skip.no_folder >
-            0;
+          skip.no_accepted +
+          skip.unauthorized +
+          skip.unknown_lang +
+          skip.no_code +
+          skip.already_present +
+          skip.no_folder >
+          0;
         const lastError = allSkipped
           ? `Imported 0; skipped: already_present=${skip.already_present}, no_meta=${skip.no_meta}, no_accepted=${skip.no_accepted}, unauthorized=${skip.unauthorized}, unknown_lang=${skip.unknown_lang}, no_code=${skip.no_code}, detail_200_no_code=${skip.detail_http_200_no_code}, detail_401_403=${skip.detail_http_401_403}, detail_404=${skip.detail_http_404}, detail_429=${skip.detail_http_429}, detail_302=${skip.detail_http_302}, detail_http_other=${skip.detail_http_other}, detail_gql_fail=${skip.detail_graphql_fail}, gql_200_no_code=${skip.detail_graphql_200_no_code}, gql_401_403=${skip.detail_graphql_401_403}, gql_429=${skip.detail_graphql_429}, gql_other=${skip.detail_graphql_other}, gql_last_status=${skip.detail_graphql_last_status}, gql_last_error=${skip.detail_graphql_last_error || 'none'}, html_200=${skip.detail_html_200}, html_404=${skip.detail_html_404}, html_other=${skip.detail_html_other}, html_next=${skip.detail_html_has_next_data}, html_subcode=${skip.detail_html_has_submission_code}, html_200_no_code=${skip.detail_html_200_no_code}, github_fail=${skip.github_fail}, gh_401_403=${skip.github_401_403}, gh_404=${skip.github_404}, gh_409_422=${skip.github_409_422}, gh_other=${skip.github_other}, gh_last_status=${skip.github_last_status}, gh_last_path=${skip.github_last_path || 'none'}.`
           : '';
@@ -553,7 +553,7 @@ async function maybeImportExistingLeetCodeSolutions() {
             skip,
           },
         });
-        
+
         // Automatically continue to next batch
         setTimeout(maybeImportExistingLeetCodeSolutions, 5000);
       }

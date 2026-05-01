@@ -83,16 +83,16 @@ function isExtensionContextInvalidatedError(err) {
 
 async function safeStorageGet(keys) {
   return new Promise((resolve) => {
-      chrome.storage.local.get(keys, resolve);
+    chrome.storage.local.get(keys, resolve);
   });
 }
 
 function safeStorageSet(items) {
-    return new Promise((resolve) => {
-        chrome.storage.local.set(items, () => {
-             resolve(true); 
-        });
+  return new Promise((resolve) => {
+    chrome.storage.local.set(items, () => {
+      resolve(true);
     });
+  });
 }
 
 function getCookieValue(name) {
@@ -271,6 +271,11 @@ async function githubPutContent({
   sha,
 }) {
   const url = `https://api.github.com/repos/${hook}/contents/${directory}/${filename}`;
+  const ghHeaders = {
+    Authorization: `token ${token}`,
+    Accept: 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json',
+  };
   const body = {
     message,
     content: contentBase64,
@@ -281,30 +286,27 @@ async function githubPutContent({
   let text = '';
   let json = null;
   try {
-    res = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Authorization: `token ${token}`,
-        Accept: 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+    res = await fetch(url, { method: 'PUT', headers: ghHeaders, body: JSON.stringify(body) });
     text = await res.text();
-    try {
-      json = text ? JSON.parse(text) : null;
-    } catch (e) {
-      json = null;
+    try { json = text ? JSON.parse(text) : null; } catch (e) { json = null; }
+
+    // 422 means the file already exists but we didn't supply its current SHA.
+    // Fetch the real SHA and retry once so stale/missing local SHA never blocks an upload.
+    if (res.status === 422 && !sha) {
+      const getRes = await fetch(url, { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' } });
+      if (getRes.ok) {
+        const getJson = await getRes.json().catch(() => null);
+        const existingSha = getJson?.sha;
+        if (existingSha) {
+          body.sha = existingSha;
+          res = await fetch(url, { method: 'PUT', headers: ghHeaders, body: JSON.stringify(body) });
+          text = await res.text();
+          try { json = text ? JSON.parse(text) : null; } catch (e) { json = null; }
+        }
+      }
     }
   } catch (e) {
-    return {
-      ok: false,
-      status: 0,
-      url,
-      error: String(e),
-      text: '',
-      json: null,
-    };
+    return { ok: false, status: 0, url, error: String(e), text: '', json: null };
   }
 
   const ok = res && (res.status === 200 || res.status === 201);
