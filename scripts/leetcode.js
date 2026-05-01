@@ -39,13 +39,30 @@
   let lastUrl = location.href;
   let lastProcessedId = null;
 
-  // Watch for SPA navigation (LeetCode never does a full page reload)
-  const navObserver = new MutationObserver(() => {
-    if (location.href !== lastUrl) {
-      lastUrl = location.href;
-      maybeHandleUrl(lastUrl);
+  // Intercept history.pushState / replaceState so we never miss URL changes
+  // that happen without a subsequent DOM mutation (common in React/Next.js SPAs).
+  function onUrlChange() {
+    const url = location.href;
+    if (url !== lastUrl) {
+      lastUrl = url;
+      maybeHandleUrl(url);
     }
-  });
+  }
+
+  const _origPush = history.pushState.bind(history);
+  history.pushState = function (...args) {
+    _origPush(...args);
+    onUrlChange();
+  };
+  const _origReplace = history.replaceState.bind(history);
+  history.replaceState = function (...args) {
+    _origReplace(...args);
+    onUrlChange();
+  };
+  window.addEventListener('popstate', onUrlChange);
+
+  // MutationObserver as a belt-and-suspenders fallback
+  const navObserver = new MutationObserver(onUrlChange);
   navObserver.observe(document.documentElement, { childList: true, subtree: true });
 
   // Also handle direct load onto a submission URL
@@ -118,8 +135,8 @@
       }
 
       const codeFilename = appendSubmissionIdToFilename(`${folder}${ext}`, submissionId);
-      const codeFilePathKey = folder + codeFilename;
-      const readmeKey = folder + 'README.md';
+      const codeFilePathKey = `${folder}/${codeFilename}`;
+      const readmeKey = `${folder}/README.md`;
       const codeSha = shaMap[codeFilePathKey] || null;
       const readmeSha = shaMap[readmeKey] || null;
       const hadAnyCodeBefore = hasAnyCodeShaForFolder(shaMap, folder);

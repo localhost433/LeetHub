@@ -316,7 +316,7 @@ async function maybeImportExistingLeetCodeSolutions() {
             submissionId,
           );
 
-          const codeFilePathKey = folder + codeFilename;
+          const codeFilePathKey = `${folder}/${codeFilename}`;
           if (uploadedThisRun.has(codeFilePathKey)) continue;
 
           // Already uploaded?
