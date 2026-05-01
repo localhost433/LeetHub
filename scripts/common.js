@@ -83,15 +83,21 @@ function isExtensionContextInvalidatedError(err) {
 
 async function safeStorageGet(keys) {
   return new Promise((resolve) => {
-    chrome.storage.local.get(keys, resolve);
+    try {
+      chrome.storage.local.get(keys, resolve);
+    } catch (e) {
+      resolve({});
+    }
   });
 }
 
 function safeStorageSet(items) {
   return new Promise((resolve) => {
-    chrome.storage.local.set(items, () => {
-      resolve(true);
-    });
+    try {
+      chrome.storage.local.set(items, () => resolve(true));
+    } catch (e) {
+      resolve(false);
+    }
   });
 }
 
