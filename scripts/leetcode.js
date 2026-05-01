@@ -141,8 +141,8 @@
       const readmeSha = shaMap[readmeKey] || null;
       const hadAnyCodeBefore = hasAnyCodeShaForFolder(shaMap, folder);
 
-      const commitMsg = buildCommitMsg(title, difficulty, submission.runtimePercentile, submission.memoryPercentile);
-      const readmeContent = `# ${padProblemId(frontendId) || ''}. ${title}\n## ${difficulty}\n\nhttps://leetcode.com/problems/${slug}/\n`;
+      const commitMsg = buildCommitMsg(title, frontendId);
+      const readmeContent = buildReadmeContent(frontendId, title, slug, difficulty, submission.runtimePercentile, submission.memoryPercentile);
 
       // Upload README (best-effort)
       const readmeRes = await githubPutContent({
@@ -188,16 +188,25 @@
       await safeStorageSet({ stats });
       console.log(`LeetHub: Successfully uploaded ${folder}/${codeFilename}`);
     } catch (err) {
-      console.error('LeetHub: processSubmission failed', err);
+      if (!isExtensionContextInvalidatedError(err)) {
+        console.error('LeetHub: processSubmission failed', err);
+      }
     }
   }
 
-  function buildCommitMsg(title, difficulty, runtimePct, memoryPct) {
+  function buildCommitMsg(title, frontendId) {
     let msg = `${submitMsg} - ${title}`;
-    if (difficulty) msg += ` | ${difficulty}`;
-    if (runtimePct != null) msg += ` | Runtime: ${runtimePct.toFixed(2)}%`;
-    if (memoryPct != null) msg += ` | Memory: ${memoryPct.toFixed(2)}%`;
+    const id = padProblemId(frontendId);
+    if (id) msg += ` - ${id}`;
     return msg;
+  }
+
+  function buildReadmeContent(frontendId, title, slug, difficulty, runtimePct, memoryPct) {
+    const id = padProblemId(frontendId) || '';
+    let stats = difficulty || '';
+    if (runtimePct != null) stats += ` | Runtime: ${runtimePct.toFixed(2)}%`;
+    if (memoryPct != null) stats += ` | Memory: ${memoryPct.toFixed(2)}%`;
+    return `# ${id}. ${title}\n## ${stats}\n\nhttps://leetcode.com/problems/${slug}/\n`;
   }
 
   /**
