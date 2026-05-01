@@ -1,30 +1,24 @@
 /*
   LeetHub - Content Script
-  Orchestrates the submission process using Adapters and Services.
+  Detects new accepted submissions via URL changes and uploads them to GitHub.
+  Uses the same GraphQL/REST utilities as the import flow (common.js).
 */
 
 (async function () {
   console.log('LeetHub: Initializing...');
 
-  // 1. Dependency Check
-  // We expect these to be loaded by manifest.json before this script runs
-  if (!window.LeetHubGitHubService || !window.LeetHubLeetCodeAdapter || !window.LeetHubStorageService) {
-    console.error('LeetHub: Critical dependencies missing.');
+  // Expect safeStorageGet/safeStorageSet, leetCodeGraphQL, fetchLeetCodeSubmissionCodeGraphQL,
+  // fetchLeetCodeSubmissionDetail, githubPutContent, buildLeetCodeFolderName, padProblemId,
+  // appendSubmissionIdToFilename, hasSubmissionIdShaForFolder, hasAnyCodeShaForFolder,
+  // langToExt — all loaded via manifest before this script.
+
+  const config = await safeStorageGet(['leethub_token', 'leethub_hook']);
+  if (!config.leethub_token || !config.leethub_hook) {
+    console.log('LeetHub: No token/hook found, skipping submission watcher');
     return;
   }
 
-  const Adapter = window.LeetHubLeetCodeAdapter;
-  const GitHub = window.LeetHubGitHubService;
-  const Storage = window.LeetHubStorageService;
-
-  // 2. Configuration (Lazy Read)
-  const config = await Storage.get(['leethub_token', 'leethub_hook']);
-  if (!config.leethub_token) {
-    console.log('LeetHub: No token found, skipping');
-    return;
-  }
-
-  /* Sync any existing solutions (import) if configured */
+  /* Trigger bulk import if needed */
   if (typeof maybeImportExistingLeetCodeSolutions === 'function') {
     maybeImportExistingLeetCodeSolutions();
   }
@@ -39,136 +33,195 @@
     }
   });
 
-  // 3. Observer - specific targeting
-  const observer = new MutationObserver(handleMutations);
-  
-  // Only observe the specific app container usually found in LeetCode
-  // LeetCode's SPA root is usually #app or body if not found
-  const appNode = document.querySelector('#app') || document.body;
-  if(appNode) {
-      observer.observe(appNode, { childList: true, subtree: true });
+  // Submission detail URL pattern: /problems/{slug}/submissions/{id}/
+  const SUBMISSION_URL_RE = /\/problems\/([^/]+)\/submissions\/(\d+)\/?/;
+
+  let lastUrl = location.href;
+  let lastProcessedId = null;
+
+  // Watch for SPA navigation (LeetCode never does a full page reload)
+  const navObserver = new MutationObserver(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      maybeHandleUrl(lastUrl);
+    }
+  });
+  navObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+  // Also handle direct load onto a submission URL
+  maybeHandleUrl(location.href);
+
+  function maybeHandleUrl(url) {
+    const m = url.match(SUBMISSION_URL_RE);
+    if (!m) return;
+    const slug = m[1];
+    const submissionId = m[2];
+    if (submissionId === lastProcessedId) return;
+    lastProcessedId = submissionId;
+    // Small delay so LeetCode's own fetch has time to complete
+    setTimeout(() => processSubmission(slug, submissionId), 1500);
   }
 
-  let debounce = null;
+  async function processSubmission(slug, submissionId) {
+    try {
+      console.log(`LeetHub: Processing submission ${submissionId} for ${slug}`);
 
-  function handleMutations(mutations) {
-    // FAST FAIL: specific success modal or result element directly
-    // Do NOT iterate mutations unless absolutely necessary for granular diffing
-    
-    // Selectors for success elements on LeetCode
-    const successSelectors = [
-         '[data-e2e-locator="submission-result-success"]', // New UI
-        '.success-element', // Old UI
-        'div.success', // Generic
-    ];
+      const data = await safeStorageGet(['leethub_token', 'leethub_hook', 'stats']);
+      if (!data.leethub_token || !data.leethub_hook) return;
 
-    const successElem = document.querySelector(successSelectors.join(','));
-    
-    // Also check for the "Accepted" text in the result-state if element exists
-    const resultState = document.getElementById('result-state');
-    const isAccepted = resultState && (resultState.innerText === 'Accepted' || resultState.className.includes('success'));
+      const token = data.leethub_token;
+      const hook = data.leethub_hook;
+      const stats =
+        data.stats && typeof data.stats === 'object'
+          ? data.stats
+          : { solved: 0, easy: 0, medium: 0, hard: 0, sha: {} };
+      if (!stats.sha || typeof stats.sha !== 'object') stats.sha = {};
+      const shaMap = stats.sha;
 
-    if ((successElem || isAccepted) && !debounce) {
-        console.log('LeetHub: Submission detected.');
-        debounce = setTimeout(() => {
-            processSubmission();
-            debounce = null; 
-        }, 2000); // Wait for animation/data to settle
+      // Fetch submission (checks accepted status + gets code in one call)
+      const submission = await fetchSubmissionDetails(submissionId);
+      if (!submission) {
+        console.log('LeetHub: Could not fetch submission details');
+        return;
+      }
+      if (!submission.accepted) {
+        console.log('LeetHub: Submission not accepted, skipping');
+        return;
+      }
+      if (!submission.code) {
+        console.log('LeetHub: No code in submission');
+        return;
+      }
+
+      // Fetch problem metadata
+      const problem = await fetchProblemDetails(slug);
+      const frontendId = problem?.frontendId;
+      const title = problem?.title || slug;
+      const difficulty = problem?.difficulty || '';
+
+      const folder = buildLeetCodeFolderName(frontendId, slug);
+      if (!folder) {
+        console.log('LeetHub: Could not build folder name');
+        return;
+      }
+
+      // Dedup: already uploaded this exact submission?
+      if (hasSubmissionIdShaForFolder(shaMap, folder, submissionId)) {
+        console.log('LeetHub: Already uploaded submission', submissionId);
+        return;
+      }
+
+      const ext = langToExt(submission.lang);
+      if (!ext) {
+        console.log('LeetHub: Unknown language', submission.lang);
+        return;
+      }
+
+      const codeFilename = appendSubmissionIdToFilename(`${folder}${ext}`, submissionId);
+      const codeFilePathKey = folder + codeFilename;
+      const readmeKey = folder + 'README.md';
+      const codeSha = shaMap[codeFilePathKey] || null;
+      const readmeSha = shaMap[readmeKey] || null;
+      const hadAnyCodeBefore = hasAnyCodeShaForFolder(shaMap, folder);
+
+      const commitMsg = `${submitMsg} - ${title}`;
+      const readmeContent = `# ${padProblemId(frontendId) || ''}. ${title}\n## ${difficulty}\n\nhttps://leetcode.com/problems/${slug}/\n`;
+
+      // Upload README (best-effort)
+      const readmeRes = await githubPutContent({
+        token,
+        hook,
+        directory: folder,
+        filename: 'README.md',
+        contentBase64: btoa(unescape(encodeURIComponent(readmeContent))),
+        message: readmeMsg,
+        sha: readmeSha,
+      });
+      if (readmeRes.ok && readmeRes.sha) {
+        shaMap[readmeKey] = readmeRes.sha;
+      }
+
+      // Upload code
+      const codeRes = await githubPutContent({
+        token,
+        hook,
+        directory: folder,
+        filename: codeFilename,
+        contentBase64: btoa(unescape(encodeURIComponent(submission.code))),
+        message: commitMsg,
+        sha: codeSha,
+      });
+
+      if (!codeRes.ok) {
+        console.error('LeetHub: Code upload failed', codeRes.status, codeRes.json);
+        return;
+      }
+
+      if (codeRes.sha) shaMap[codeFilePathKey] = codeRes.sha;
+
+      // Update problem stats once per problem (first time we have any code)
+      if (!hadAnyCodeBefore && !codeSha) {
+        stats.solved = (stats.solved || 0) + 1;
+        if (difficulty === 'Easy') stats.easy = (stats.easy || 0) + 1;
+        else if (difficulty === 'Medium') stats.medium = (stats.medium || 0) + 1;
+        else if (difficulty === 'Hard') stats.hard = (stats.hard || 0) + 1;
+      }
+
+      stats.sha = shaMap;
+      await safeStorageSet({ stats });
+      console.log(`LeetHub: Successfully uploaded ${folder}/${codeFilename}`);
+    } catch (err) {
+      console.error('LeetHub: processSubmission failed', err);
     }
   }
 
-  async function processSubmission() {
-    try {
-      console.log('LeetHub: Processing submission...');
-      
-      const submissionUrl = Adapter.getSubmissionUrl();
-      if (!submissionUrl) {
-          console.log('LeetHub: No submission URL found.');
-          return;
-      }
+  /**
+   * Fetch submission details via GraphQL.
+   * Returns { accepted, code, lang } or null on failure.
+   * Falls back to REST API if GraphQL returns no code.
+   */
+  async function fetchSubmissionDetails(submissionId) {
+    const idNum = Number(submissionId);
+    const query =
+      'query leethubSubDetails($submissionId: Int!) { submissionDetails(submissionId: $submissionId) { statusCode code lang { name } } }';
 
-      // Fetch submission code
-      const data = await Adapter.fetchSubmissionData(submissionUrl);
-      if (!data || !data.code) {
-          throw new Error('No code found in submission');
-      }
+    const res = await leetCodeGraphQL(query, { submissionId: idNum });
+    const d = res?.json?.data?.submissionDetails;
 
-      // Fetch problem details
-      const problemData = Adapter.getProblemData();
-      const difficulty = problemData ? problemData.difficulty : Adapter.getDifficulty();
-      const problemSlug = Adapter.getProblemSlug();
-      const title = problemData ? problemData.title : problemSlug; 
-
-      // Determine extension
-      const extension = getExtension(); 
-      const filename = `${title.replace(/\s+/g, '-')}${extension}`; 
-      const msg = `Time: ${data.runtime}, Memory: ${data.memory} - LeetHub`;
-
-      // Upload Code
-      /* The GitHub service currently expects individual params, not a data object. 
-         We should use the existing sendMessage method or the properties exposed on window.LeetHubGitHubService 
-         checking github-service.js: it exposes `sendMessage` but also `uploadSolution`?
-         Ah, github-service.js in the earlier read_file output only showed `sendMessage` clearly in the top.
-         Let's assume we use sendMessage to keep it simple and aligned with background.js handling 'upload'
-      */
-      
-      await chrome.runtime.sendMessage({
-          action: 'upload',
-          content: data.code,
-          directory: title, // Folder name
-          filename: filename,
-          msg: msg,
-          hook: config.leethub_hook,
-          // We can add SHA management if we want to update, but let's stick to simple upload first
-      });
-      
-      console.log('LeetHub: Code uploaded successfully');
-
-      // Upload README 
-      if (problemData && problemData.markdown) {
-          await chrome.runtime.sendMessage({
-            action: 'upload',
-            content: problemData.markdown,
-            directory: title,
-            filename: 'README.md',
-            msg: msg, 
-            hook: config.leethub_hook
-          });
-          console.log('LeetHub: README uploaded successfully');
-      }
-
-    } catch (err) {
-      console.error('LeetHub: Submission handling failed', err);
-    } 
-  }
-  
-  function getExtension() {
-      const languageElem = document.querySelector('.ant-select-selection-selected-value') || 
-                           document.querySelector('[data-cy="lang-select"]');
-      const lang = languageElem ? languageElem.innerText : 'python3'; 
-      
-      const map = {
-          'C++': '.cpp',
-          'Java': '.java',
-          'Python': '.py',
-          'Python3': '.py',
-          'C': '.c',
-          'C#': '.cs',
-          'JavaScript': '.js',
-          'Ruby': '.rb',
-          'Swift': '.swift',
-          'Go': '.go',
-          'Scala': '.scala',
-          'Kotlin': '.kt',
-          'Rust': '.rs',
-          'PHP': '.php',
-          'TypeScript': '.ts',
-          'Racket': '.rkt',
-          'Erlang': '.erl',
-          'Elixir': '.ex',
-          'Dart': '.dart'
+    if (d && typeof d.code === 'string' && d.code.length > 0) {
+      return {
+        accepted: d.statusCode === 10,
+        code: d.code,
+        lang: d.lang?.name || '',
       };
-      return map[lang] || '.txt';
+    }
+
+    // GraphQL returned no code — fall back to REST
+    const rest = await fetchLeetCodeSubmissionDetail(submissionId);
+    if (!rest.ok || !rest.code) return null;
+
+    // REST API doesn't reliably return statusCode; assume accepted if we got code
+    // (non-accepted submissions rarely have browseable detail pages for non-owners)
+    return {
+      accepted: true,
+      code: rest.code,
+      lang: rest.lang || '',
+    };
   }
 
+  /**
+   * Fetch problem title, frontendId, and difficulty via GraphQL.
+   */
+  async function fetchProblemDetails(titleSlug) {
+    const query =
+      'query leethubProblem($titleSlug: String!) { question(titleSlug: $titleSlug) { questionFrontendId title difficulty } }';
+    const res = await leetCodeGraphQL(query, { titleSlug });
+    const q = res?.json?.data?.question;
+    if (!q) return null;
+    return {
+      frontendId: q.questionFrontendId,
+      title: q.title,
+      difficulty: q.difficulty,
+    };
+  }
 })();
