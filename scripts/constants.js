@@ -1,28 +1,6 @@
 /* eslint-disable no-unused-vars */
 
 /* Global Constants */
-const languages = {
-  Python: '.py',
-  Python3: '.py',
-  'C++': '.cpp',
-  C: '.c',
-  Java: '.java',
-  'C#': '.cs',
-  JavaScript: '.js',
-  Javascript: '.js',
-  Ruby: '.rb',
-  Swift: '.swift',
-  Go: '.go',
-  Kotlin: '.kt',
-  Scala: '.scala',
-  Rust: '.rs',
-  PHP: '.php',
-  TypeScript: '.ts',
-  MySQL: '.sql',
-  'MS SQL Server': '.sql',
-  Oracle: '.sql',
-};
-
 const leetCodeApiLangToExt = {
   python: '.py',
   python3: '.py',
@@ -67,7 +45,6 @@ const DEFAULT_LEETCODE_IMPORT_SETTINGS = {
 // shared scope). This lets tests import the real source instead of a copy.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    languages,
     leetCodeApiLangToExt,
     readmeMsg,
     discussionMsg,

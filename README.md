@@ -1,6 +1,6 @@
 # LeetHub
 
-Chrome extension (Manifest V3) that commits your accepted solutions from LeetCode and GeeksforGeeks to a GitHub repository.
+Chrome extension (Manifest V3) that commits your accepted solutions from LeetCode to a GitHub repository.
 
 ## Credits
 
@@ -11,7 +11,7 @@ This project is a fork in the LeetHub ecosystem:
 
 ## What it does
 
-- **Automated Submission Handling**: When you submit a solution on LeetCode or GeeksforGeeks and it gets **Accepted**, the extension automatically creates/updates a folder for that problem in your configured GitHub repo.
+- **Automated Submission Handling**: When you submit a solution on LeetCode and it gets **Accepted**, the extension automatically creates/updates a folder for that problem in your configured GitHub repo.
 - **Manual Import**: You can manually import your existing accepted solutions from LeetCode by clicking the "Sync" button in the extension popup. This does *not* happen automatically to prevent unwanted commits.
 - **Deduplication**: It tracks solved counts and file SHAs in `chrome.storage.local` to avoid duplicate commits.
 
@@ -56,7 +56,6 @@ If you link a repo that already contains solutions, LeetHub performs a one-time 
 ## Usage
 
 - LeetCode: solve a problem -> submit -> once it shows **Accepted**, the extension commits to GitHub.
-- GeeksforGeeks: same idea—when the submission is accepted, it commits to GitHub.
 
 You can view your linked repo and progress stats from the extension popup.
 
@@ -86,12 +85,12 @@ npm run lint-test
 ## Privacy
 
 - Stores the GitHub token in `chrome.storage.local`.
-- Sends requests only to `api.github.com`, `leetcode.com`, and `practice.geeksforgeeks.org`.
+- Sends requests only to `api.github.com` and `leetcode.com`.
 
 ## Security note (GitHub permissions)
 
 - LeetHub authenticates with a **fine-grained PAT** only. Restrict it to the single repo you want LeetHub to write to and grant just **Contents: Read and write**.
-- The token is held by the background service worker and used only for `api.github.com` calls; it is never exposed to LeetCode/GeeksforGeeks page contexts.
+- The token is held by the background service worker and used only for `api.github.com` calls; it is never exposed to LeetCode page contexts.
 
 ### Tutorial: Create a fine-grained PAT (recommended)
 
