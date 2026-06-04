@@ -40,9 +40,7 @@ This fork’s notable additions/changes:
 ## First-time setup
 
 1. Click the extension icon.
-2. Authenticate with GitHub using one of these:
-   - **Fine-grained PAT (recommended)**: create a fine-grained Personal Access Token restricted to a single repository, then paste it into the popup and click **Save token**.
-   - **OAuth (convenient)**: click **Authorize with GitHub** and complete the OAuth flow.
+2. Authenticate with GitHub using a **fine-grained Personal Access Token** restricted to a single repository (see the tutorial below), then paste it into the popup and click **Save token**.
 3. On the setup (welcome) page, choose one:
    - **Create repo** (new repo), or
    - **Link repo** (use an existing repo).
@@ -81,20 +79,19 @@ npm run lint-test
 
 ## Troubleshooting
 
-- **Auth loops / no token saved**: finish the GitHub OAuth flow and ensure you didn’t block GitHub cookies/popups.
+- **Token rejected / not saved**: the token is validated against the GitHub API when you save it; make sure it’s a fine-grained PAT with **Contents: Read and write** on the target repo and that it hasn’t expired.
 - **Nothing uploads after AC**: confirm a repo is linked (mode is `commit`), and check extension errors in `chrome://extensions` -> **Service worker** -> **Inspect**.
 - **GitHub API errors / rate limits**: syncing very large repos can take time and can hit rate limits.
 
 ## Privacy
 
 - Stores the GitHub token in `chrome.storage.local`.
-- Sends requests only to `github.com`, `api.github.com`, `leetcode.com`, and `practice.geeksforgeeks.org`.
+- Sends requests only to `api.github.com`, `leetcode.com`, and `practice.geeksforgeeks.org`.
 
 ## Security note (GitHub permissions)
 
-- Creating a new repo does **not** automatically limit a GitHub OAuth token to that repo. OAuth scopes are account-wide.
-- If you want repo-scoped access, use a **fine-grained PAT** restricted to the single repo you want LeetHub to write to (grant **Contents: Read and write**).
-- LeetHub’s OAuth flow uses **PKCE** (no embedded client secret), but it’s still broader access than a repo-restricted fine-grained PAT.
+- LeetHub authenticates with a **fine-grained PAT** only. Restrict it to the single repo you want LeetHub to write to and grant just **Contents: Read and write**.
+- The token is held by the background service worker and used only for `api.github.com` calls; it is never exposed to LeetCode/GeeksforGeeks page contexts.
 
 ### Tutorial: Create a fine-grained PAT (recommended)
 
@@ -115,6 +112,5 @@ Goal: create a token that can only write to **one** repository.
 
 Notes:
 
-- OAuth in this repo uses a fixed GitHub OAuth **client id**; for forks (this being one), OAuth may not work. Using a **fine-grained PAT** avoids this.
 - If your repo is owned by an organization, the org may need to allow/approve fine-grained PATs.
 - If you get `403` errors while uploading, your token likely lacks **Contents: Read and write** or the repo wasn’t selected.

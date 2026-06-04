@@ -5,7 +5,7 @@ const MAX_ATTEMPTS = 2;
 const RETRY_ALARM = 'leethub_retry';
 
 /**
- * Handles incoming messages from content scripts or authorize.js
+ * Handles incoming messages from content scripts.
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   routeMessage(request).then(sendResponse).catch(err => {
@@ -16,16 +16,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 async function routeMessage(request) {
-    if (request && request.closeWebPage === true) {
-        return handleAuthMessage(request);
-    }
     switch (request.action) {
         case 'upload':
             return handleUpload(request);
         case 'get':
             return handleGet(request);
         default:
-             // If it's an auth message or other legacy message, handle it or ignore
              return null;
     }
 }

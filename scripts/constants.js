@@ -61,3 +61,20 @@ const DEFAULT_LEETCODE_IMPORT_SETTINGS = {
   mode: 'latest_per_lang',
   scope: 'backfill_only',
 };
+
+// Export for Node/Jest. In the browser `module` is undefined, so this is a
+// no-op and the declarations above remain plain globals (the content-script
+// shared scope). This lets tests import the real source instead of a copy.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    languages,
+    leetCodeApiLangToExt,
+    readmeMsg,
+    discussionMsg,
+    createNotesMsg,
+    submitMsg,
+    NORMAL_PROBLEM,
+    EXPLORE_SECTION_PROBLEM,
+    DEFAULT_LEETCODE_IMPORT_SETTINGS,
+  };
+}

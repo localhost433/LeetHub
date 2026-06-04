@@ -19,14 +19,8 @@
 
           <p id="auth_error" class="notice error" hidden></p>
 
-          <button id="authenticate" class="btn btn-primary">
-            Authorize with GitHub
-          </button>
-
-          <div class="divider"><span>or</span></div>
-
           <label class="label" for="pat_token"
-            >Fine-grained token (recommended)</label
+            >GitHub fine-grained token</label
           >
           <input
             id="pat_token"
@@ -40,7 +34,7 @@
             Create a fine-grained PAT restricted to a single repo with
             Contents read/write.
           </p>
-          <button id="save_pat" class="btn btn-secondary">
+          <button id="save_pat" class="btn btn-primary">
             Save token
           </button>
         </div>
@@ -148,7 +142,6 @@
       </footer>
     </div>
 
-    <script src="scripts/oauth2.js"></script>
     <script type="text/javascript" src="popup.js"></script>
   </body>
 </html>

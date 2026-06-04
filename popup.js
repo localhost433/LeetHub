@@ -1,5 +1,3 @@
-/* global oAuth2 */
-
 function show(id) {
   const el = document.getElementById(id);
   if (el) el.hidden = false;
@@ -162,7 +160,6 @@ async function saveTokenAndProceed(token) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const authenticateBtn = document.getElementById('authenticate');
   const savePatBtn = document.getElementById('save_pat');
   const patInput = document.getElementById('pat_token');
   const logoutBtn = document.getElementById('logout');
@@ -183,18 +180,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const { leethub_token: token } =
     await chrome.storage.local.get('leethub_token');
 
-  if (!token) {
+  const setupPatAuth = () => {
     show('auth_mode');
-    if (authenticateBtn) {
-      authenticateBtn.addEventListener('click', () => oAuth2.begin());
-    }
-
     if (savePatBtn) {
       savePatBtn.addEventListener('click', async () => {
         await saveTokenAndProceed(patInput ? patInput.value : '');
       });
     }
-
     if (patInput) {
       patInput.addEventListener('keydown', async (e) => {
         if (e.key === 'Enter') {
@@ -203,7 +195,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     }
+  };
 
+  if (!token) {
+    setupPatAuth();
     return;
   }
 
@@ -213,26 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   );
   if (status === 401) {
     await chrome.storage.local.set({ leethub_token: null });
-    show('auth_mode');
-    if (authenticateBtn) {
-      authenticateBtn.addEventListener('click', () => oAuth2.begin());
-    }
-
-    if (savePatBtn) {
-      savePatBtn.addEventListener('click', async () => {
-        await saveTokenAndProceed(patInput ? patInput.value : '');
-      });
-    }
-
-    if (patInput) {
-      patInput.addEventListener('keydown', async (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          await saveTokenAndProceed(patInput.value);
-        }
-      });
-    }
-
+    setupPatAuth();
     return;
   }
 

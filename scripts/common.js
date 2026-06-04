@@ -622,5 +622,27 @@ async function fetchAcceptedSubmissionListGraphQL(
 
 // End of common utils
 
+// Export the pure helpers for Node/Jest. In the browser `module` is undefined,
+// so this is skipped and these stay as content-script globals. Tests import
+// from here so they verify the real implementations (no copy-paste drift).
+// `normalizeLeetCodeImportSettings` reads the global DEFAULT_LEETCODE_IMPORT_SETTINGS
+// from constants.js; tests make it available before requiring this module.
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    toKebabCase,
+    normalizeLeetCodeImportSettings,
+    appendSubmissionIdToFilename,
+    hasAnyCodeShaForFolder,
+    hasSubmissionIdShaForFolder,
+    isExtensionContextInvalidatedError,
+    padProblemId,
+    buildLeetCodeFolderName,
+    decodeLeetCodeEscapedString,
+    extractStringLiteralAfter,
+    extractLeetCodeSubmissionCodeFromHtml,
+    difficultyLabelFromLevel,
+  };
+}
+
 
 
