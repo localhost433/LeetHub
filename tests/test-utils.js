@@ -1,11 +1,11 @@
-// Mock for browser-specific APIs and helper export for our tests
+// Helper exports for unit tests.
+//
+// NOTE: these are copies of the pure functions in scripts/common.js. The
+// extension has no module system (scripts are loaded as globals via the
+// manifest), so the implementations are mirrored here for Node/Jest. Keep them
+// in sync with scripts/common.js until the source is bundled (see issue #6).
 
-// 1. common.js exports
 const Common = {};
-
-// We can copy-paste the pure functions here or create a mock file structure that allows require.
-// Since we don't have modules, copy-pasting for unit tests is the most straightforward
-// without rewriting the entire repo to CommonJS/ESM.
 
 Common.toKebabCase = (string) => {
   return string
@@ -31,43 +31,6 @@ Common.appendSubmissionIdToFilename = (fileName, submissionId) => {
   return `${name}_${id}`;
 };
 
-// 2. adapter logic mock
-// We extract the pure logic from _extractCodeFromHtml which relies on DOMParser.
-// Since we are in Node, we can simulate the "script text content" extraction step.
-
-const AdapterMock = {};
-
-AdapterMock.extractCodeFromHtml = (htmlFragment) => {
-    // This mocks the regex logic inside _extractCodeFromHtml AFTER DOMParser
-    // const scripts = doc.querySelectorAll('script'); ... script.textContent ...
-    
-    // Simulate finding the meaningful script content
-    const text = htmlFragment; 
-    
-    // Original Logic:
-    // const match = text.match(/submissionCode:\s*'([^']+)'/);
-    // if (match && match[1]) { ... }
-    
-    const match = text.match(/submissionCode:\s*'([^']+)'/);
-    if (match && match[1]) {
-       try {
-           return JSON.parse(`"${match[1]}"`); // decodeUnicode
-       } catch (e) {
-           return match[1];
-       }
-    }
-    return null;
-};
-
-AdapterMock.decodeUnicode = (str) => {
-      try {
-        return JSON.parse(`"${str}"`); 
-      } catch (e) {
-        return str;
-      }
-};
-
 module.exports = {
   ...Common,
-  ...AdapterMock
 };

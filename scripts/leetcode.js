@@ -8,13 +8,15 @@
   console.log('LeetHub: Initializing...');
 
   // Expect safeStorageGet/safeStorageSet, leetCodeGraphQL, fetchLeetCodeSubmissionCodeGraphQL,
-  // fetchLeetCodeSubmissionDetail, githubPutContent, buildLeetCodeFolderName, padProblemId,
+  // fetchLeetCodeSubmissionDetail, githubUploadViaBackground, buildLeetCodeFolderName, padProblemId,
   // appendSubmissionIdToFilename, hasSubmissionIdShaForFolder, hasAnyCodeShaForFolder,
   // langToExt — all loaded via manifest before this script.
 
-  const config = await safeStorageGet(['leethub_token', 'leethub_hook']);
-  if (!config.leethub_token || !config.leethub_hook) {
-    console.log('LeetHub: No token/hook found, skipping submission watcher');
+  // Gate on the (non-secret) hook; a configured hook implies an authed token.
+  // The token itself is held only by the background worker and never read here.
+  const config = await safeStorageGet(['leethub_hook']);
+  if (!config.leethub_hook) {
+    console.log('LeetHub: No hook configured, skipping submission watcher');
     return;
   }
 
@@ -83,10 +85,9 @@
     try {
       console.log(`LeetHub: Processing submission ${submissionId} for ${slug}`);
 
-      const data = await safeStorageGet(['leethub_token', 'leethub_hook', 'stats']);
-      if (!data.leethub_token || !data.leethub_hook) return;
+      const data = await safeStorageGet(['leethub_hook', 'stats']);
+      if (!data.leethub_hook) return;
 
-      const token = data.leethub_token;
       const hook = data.leethub_hook;
       const stats =
         data.stats && typeof data.stats === 'object'
@@ -145,8 +146,7 @@
       const readmeContent = buildReadmeContent(frontendId, title, slug, difficulty, submission.runtimePercentile, submission.memoryPercentile);
 
       // Upload README (best-effort)
-      const readmeRes = await githubPutContent({
-        token,
+      const readmeRes = await githubUploadViaBackground({
         hook,
         directory: folder,
         filename: 'README.md',
@@ -159,8 +159,7 @@
       }
 
       // Upload code
-      const codeRes = await githubPutContent({
-        token,
+      const codeRes = await githubUploadViaBackground({
         hook,
         directory: folder,
         filename: codeFilename,

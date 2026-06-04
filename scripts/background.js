@@ -121,29 +121,57 @@ async function attemptUpload({ content, directory, filename, msg, sha, hook }) {
     return { status: 401, error: 'No LeetHub token found in storage' };
   }
 
-  const URL = `https://api.github.com/repos/${hook}/contents/${directory}/${filename}`;
+  const url = `https://api.github.com/repos/${hook}/contents/${directory}/${filename}`;
+  const headers = {
+    Authorization: `token ${leethub_token}`,
+    Accept: 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json',
+  };
   const body = { message: msg, content };
   if (sha) body.sha = sha;
 
   try {
-    const response = await fetch(URL, {
+    let response = await fetch(url, {
       method: 'PUT',
-      headers: {
-        Authorization: `token ${leethub_token}`,
-        Accept: 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(body),
     });
+    let data = await response.json().catch(() => null);
 
-    const data = await response.json();
+    // 422 with no SHA supplied: the file already exists but we didn't send its
+    // current SHA. Fetch the real SHA and retry once so a stale/missing local
+    // SHA never permanently blocks an upload.
+    if (response.status === 422 && !sha) {
+      const getRes = await fetch(url, {
+        headers: {
+          Authorization: `token ${leethub_token}`,
+          Accept: 'application/vnd.github.v3+json',
+        },
+      });
+      if (getRes.ok) {
+        const getJson = await getRes.json().catch(() => null);
+        const existingSha = getJson && getJson.sha;
+        if (existingSha) {
+          body.sha = existingSha;
+          response = await fetch(url, {
+            method: 'PUT',
+            headers,
+            body: JSON.stringify(body),
+          });
+          data = await response.json().catch(() => null);
+        }
+      }
+    }
 
     if (response.ok || response.status === 201) {
       return { status: response.status, data };
     }
 
     console.error('GitHub Upload Failed', data);
-    return { status: response.status, error: data.message || 'Unknown error' };
+    return {
+      status: response.status,
+      error: (data && data.message) || 'Unknown error',
+    };
   } catch (error) {
     console.error('Network Error', error);
     return { status: 500, error: error.message };

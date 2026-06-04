@@ -267,8 +267,15 @@ async function leetCodeGraphQL(query, variables, init = {}) {
   return { status: res.status, json };
 }
 
-async function githubPutContent({
-  token,
+// Upload a file to GitHub by delegating to the background service worker.
+//
+// The GitHub token is intentionally NOT passed here and is never read into the
+// content script. The background worker (background.js) holds the token, runs
+// the PUT (including the 422 -> refetch-SHA -> retry-once recovery), and feeds
+// failures through its retry queue. We normalise the response to the same
+// { ok, status, sha } shape the old direct-fetch helper returned so callers are
+// unchanged.
+async function githubUploadViaBackground({
   hook,
   directory,
   filename,
@@ -276,55 +283,47 @@ async function githubPutContent({
   message,
   sha,
 }) {
-  const url = `https://api.github.com/repos/${hook}/contents/${directory}/${filename}`;
-  const ghHeaders = {
-    Authorization: `token ${token}`,
-    Accept: 'application/vnd.github.v3+json',
-    'Content-Type': 'application/json',
-  };
-  const body = {
-    message,
-    content: contentBase64,
-    ...(sha ? { sha } : {}),
-  };
-
-  let res;
-  let text = '';
-  let json = null;
-  try {
-    res = await fetch(url, { method: 'PUT', headers: ghHeaders, body: JSON.stringify(body) });
-    text = await res.text();
-    try { json = text ? JSON.parse(text) : null; } catch (e) { json = null; }
-
-    // 422 means the file already exists but we didn't supply its current SHA.
-    // Fetch the real SHA and retry once so stale/missing local SHA never blocks an upload.
-    if (res.status === 422 && !sha) {
-      const getRes = await fetch(url, { headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' } });
-      if (getRes.ok) {
-        const getJson = await getRes.json().catch(() => null);
-        const existingSha = getJson?.sha;
-        if (existingSha) {
-          body.sha = existingSha;
-          res = await fetch(url, { method: 'PUT', headers: ghHeaders, body: JSON.stringify(body) });
-          text = await res.text();
-          try { json = text ? JSON.parse(text) : null; } catch (e) { json = null; }
-        }
-      }
+  return new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage(
+        {
+          action: 'upload',
+          content: contentBase64,
+          directory,
+          filename,
+          msg: message,
+          sha: sha || null,
+          hook,
+        },
+        (response) => {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            resolve({
+              ok: false,
+              status: 0,
+              sha: '',
+              error: chrome.runtime.lastError.message,
+              json: null,
+            });
+            return;
+          }
+          const status = (response && response.status) || 0;
+          const ok = status === 200 || status === 201;
+          const data = response && response.data ? response.data : null;
+          const newSha =
+            (data && data.content && (data.content.sha || data.content.git_sha)) || '';
+          resolve({
+            ok,
+            status,
+            sha: typeof newSha === 'string' ? newSha : '',
+            error: response && response.error ? response.error : '',
+            json: data,
+          });
+        },
+      );
+    } catch (e) {
+      resolve({ ok: false, status: 0, sha: '', error: String(e), json: null });
     }
-  } catch (e) {
-    return { ok: false, status: 0, url, error: String(e), text: '', json: null };
-  }
-
-  const ok = res && (res.status === 200 || res.status === 201);
-  const newSha = json?.content?.sha || json?.content?.git_sha || '';
-  return {
-    ok,
-    status: res.status,
-    url,
-    sha: typeof newSha === 'string' ? newSha : '',
-    text,
-    json,
-  };
+  });
 }
 
 function padProblemId(frontendId) {

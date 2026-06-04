@@ -32,7 +32,6 @@
         "scripts/common.js",
         "scripts/services/storage-service.js",
         "scripts/services/github-service.js",
-        "scripts/adapters/leetcode-adapter.js",
         "scripts/leetcode-import.js",
         "scripts/leetcode.js"
       ],

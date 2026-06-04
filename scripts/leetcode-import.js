@@ -4,7 +4,7 @@
 // leetCodeApiLangToExt, normalizeLeetCodeImportSettings, appendSubmissionIdToFilename, 
 // hasAnyCodeShaForFolder, hasSubmissionIdShaForFolder, isExtensionContextInvalidatedError, 
 // safeStorageGet, safeStorageSet, getCookieValue, leetCodeFetchJson, fetchLeetCodeSubmissionDetail,
-// fetchLeetCodeSubmissionCodeGraphQL, leetCodeGraphQL, githubPutContent, padProblemId, 
+// fetchLeetCodeSubmissionCodeGraphQL, leetCodeGraphQL, githubUploadViaBackground, padProblemId,
 // buildLeetCodeFolderName, extractLeetCodeSubmissionCodeFromHtml, difficultyLabelFromLevel, 
 // fetchAllSolvedProblems, fetchAcceptedSubmissionListGraphQL
 
@@ -45,7 +45,6 @@ async function maybeImportExistingLeetCodeSolutions() {
     return;
 
   const data = await safeStorageGet([
-    'leethub_token',
     'leethub_hook',
     'mode_type',
     'leetcode_import',
@@ -54,7 +53,8 @@ async function maybeImportExistingLeetCodeSolutions() {
   if (!data) return;
 
   try {
-    const token = data?.leethub_token;
+    // Token is held by the background worker and never read into this content
+    // script; a configured hook + commit mode is our "authed" signal.
     const hook = data?.leethub_hook;
     const mode = data?.mode_type;
     const importState = data?.leetcode_import || {};
@@ -71,7 +71,6 @@ async function maybeImportExistingLeetCodeSolutions() {
         importState.strategy === 'submissions_api');
 
     if (
-      !token ||
       !hook ||
       mode !== 'commit' ||
       (done && !legacyDoneZero)
@@ -401,8 +400,7 @@ async function maybeImportExistingLeetCodeSolutions() {
           const codeSha = knownSha[codeFilePathKey] || null;
 
           // Upload README (best-effort; code upload determines "imported" count)
-          const readmeRes = await githubPutContent({
-            token,
+          const readmeRes = await githubUploadViaBackground({
             hook,
             directory: folder,
             filename: 'README.md',
@@ -428,8 +426,7 @@ async function maybeImportExistingLeetCodeSolutions() {
           }
 
           // Upload code (required)
-          const codeRes = await githubPutContent({
-            token,
+          const codeRes = await githubUploadViaBackground({
             hook,
             directory: folder,
             filename: codeFilename,
