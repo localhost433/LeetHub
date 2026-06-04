@@ -21,6 +21,7 @@ const {
   decodeLeetCodeEscapedString,
   extractLeetCodeSubmissionCodeFromHtml,
   difficultyLabelFromLevel,
+  bumpSolvedStats,
 } = require('../scripts/common');
 
 describe('toKebabCase', () => {
@@ -179,5 +180,91 @@ describe('extractLeetCodeSubmissionCodeFromHtml', () => {
   });
   test('returns null for non-string input', () => {
     expect(extractLeetCodeSubmissionCodeFromHtml(null)).toBeNull();
+  });
+});
+
+describe('bumpSolvedStats', () => {
+  test('increments solved and easy for Easy difficulty', () => {
+    const stats = { solved: 5, easy: 2, medium: 1, hard: 1 };
+    bumpSolvedStats(stats, 'Easy');
+    expect(stats.solved).toBe(6);
+    expect(stats.easy).toBe(3);
+    expect(stats.medium).toBe(1);
+    expect(stats.hard).toBe(1);
+  });
+
+  test('increments solved and medium for Medium difficulty', () => {
+    const stats = { solved: 5, easy: 2, medium: 1, hard: 1 };
+    bumpSolvedStats(stats, 'Medium');
+    expect(stats.solved).toBe(6);
+    expect(stats.easy).toBe(2);
+    expect(stats.medium).toBe(2);
+    expect(stats.hard).toBe(1);
+  });
+
+  test('increments solved and hard for Hard difficulty', () => {
+    const stats = { solved: 5, easy: 2, medium: 1, hard: 1 };
+    bumpSolvedStats(stats, 'Hard');
+    expect(stats.solved).toBe(6);
+    expect(stats.easy).toBe(2);
+    expect(stats.medium).toBe(1);
+    expect(stats.hard).toBe(2);
+  });
+
+  test('increments only solved for unknown difficulty', () => {
+    const stats = { solved: 3, easy: 1, medium: 1, hard: 1 };
+    bumpSolvedStats(stats, 'Unknown');
+    expect(stats.solved).toBe(4);
+    expect(stats.easy).toBe(1);
+    expect(stats.medium).toBe(1);
+    expect(stats.hard).toBe(1);
+  });
+
+  test('increments only solved when difficulty is empty string', () => {
+    const stats = { solved: 3, easy: 1, medium: 1, hard: 1 };
+    bumpSolvedStats(stats, '');
+    expect(stats.solved).toBe(4);
+    expect(stats.easy).toBe(1);
+  });
+
+  test('treats missing counters as 0', () => {
+    const stats = {};
+    bumpSolvedStats(stats, 'Hard');
+    expect(stats.solved).toBe(1);
+    expect(stats.easy).toBeUndefined();
+    expect(stats.medium).toBeUndefined();
+    expect(stats.hard).toBe(1);
+  });
+
+  test('treats missing counters as 0 for Easy', () => {
+    const stats = {};
+    bumpSolvedStats(stats, 'Easy');
+    expect(stats.solved).toBe(1);
+    expect(stats.easy).toBe(1);
+  });
+
+  test('accumulates across multiple calls', () => {
+    const stats = { solved: 0, easy: 0, medium: 0, hard: 0 };
+    bumpSolvedStats(stats, 'Easy');
+    bumpSolvedStats(stats, 'Medium');
+    bumpSolvedStats(stats, 'Hard');
+    bumpSolvedStats(stats, 'Easy');
+    expect(stats.solved).toBe(4);
+    expect(stats.easy).toBe(2);
+    expect(stats.medium).toBe(1);
+    expect(stats.hard).toBe(1);
+  });
+
+  test('returns the mutated stats object', () => {
+    const stats = { solved: 0 };
+    const result = bumpSolvedStats(stats, 'Easy');
+    expect(result).toBe(stats);
+    expect(result.solved).toBe(1);
+  });
+
+  test('returns input unchanged for null/non-object', () => {
+    expect(bumpSolvedStats(null, 'Easy')).toBeNull();
+    expect(bumpSolvedStats(undefined, 'Easy')).toBeUndefined();
+    expect(bumpSolvedStats(42, 'Easy')).toBe(42);
   });
 });

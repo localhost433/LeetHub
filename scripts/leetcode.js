@@ -10,7 +10,7 @@
   // Expect safeStorageGet/safeStorageSet, leetCodeGraphQL, fetchLeetCodeSubmissionCodeGraphQL,
   // fetchLeetCodeSubmissionDetail, githubUploadViaBackground, buildLeetCodeFolderName, padProblemId,
   // appendSubmissionIdToFilename, hasSubmissionIdShaForFolder, hasAnyCodeShaForFolder,
-  // langToExt — all loaded via manifest before this script.
+  // bumpSolvedStats, langToExt — all loaded via manifest before this script.
 
   // Gate on the (non-secret) hook; a configured hook implies an authed token.
   // The token itself is held only by the background worker and never read here.
@@ -177,10 +177,7 @@
 
       // Update problem stats once per problem (first time we have any code)
       if (!hadAnyCodeBefore && !codeSha) {
-        stats.solved = (stats.solved || 0) + 1;
-        if (difficulty === 'Easy') stats.easy = (stats.easy || 0) + 1;
-        else if (difficulty === 'Medium') stats.medium = (stats.medium || 0) + 1;
-        else if (difficulty === 'Hard') stats.hard = (stats.hard || 0) + 1;
+        bumpSolvedStats(stats, difficulty);
       }
 
       stats.sha = shaMap;

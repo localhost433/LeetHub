@@ -620,6 +620,17 @@ async function fetchAcceptedSubmissionListGraphQL(
   return { ok: true, status: 200, submissions: out };
 }
 
+// Increment solved counters for a first-time solve. Mutates and returns `stats`.
+// `difficulty` is 'Easy' | 'Medium' | 'Hard' (anything else only bumps `solved`).
+function bumpSolvedStats(stats, difficulty) {
+  if (!stats || typeof stats !== 'object') return stats;
+  stats.solved = (stats.solved || 0) + 1;
+  if (difficulty === 'Easy') stats.easy = (stats.easy || 0) + 1;
+  else if (difficulty === 'Medium') stats.medium = (stats.medium || 0) + 1;
+  else if (difficulty === 'Hard') stats.hard = (stats.hard || 0) + 1;
+  return stats;
+}
+
 // End of common utils
 
 // Export the pure helpers for Node/Jest. In the browser `module` is undefined,
@@ -641,6 +652,7 @@ if (typeof module !== 'undefined' && module.exports) {
     extractStringLiteralAfter,
     extractLeetCodeSubmissionCodeFromHtml,
     difficultyLabelFromLevel,
+    bumpSolvedStats,
   };
 }
 

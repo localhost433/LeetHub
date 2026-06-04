@@ -1,12 +1,12 @@
 /* eslint-disable no-unused-vars */
 
 // Imports from other scripts assumed global via manifest order:
-// leetCodeApiLangToExt, normalizeLeetCodeImportSettings, appendSubmissionIdToFilename, 
-// hasAnyCodeShaForFolder, hasSubmissionIdShaForFolder, isExtensionContextInvalidatedError, 
+// leetCodeApiLangToExt, normalizeLeetCodeImportSettings, appendSubmissionIdToFilename,
+// hasAnyCodeShaForFolder, hasSubmissionIdShaForFolder, isExtensionContextInvalidatedError,
 // safeStorageGet, safeStorageSet, getCookieValue, leetCodeFetchJson, fetchLeetCodeSubmissionDetail,
 // fetchLeetCodeSubmissionCodeGraphQL, leetCodeGraphQL, githubUploadViaBackground, padProblemId,
-// buildLeetCodeFolderName, extractLeetCodeSubmissionCodeFromHtml, difficultyLabelFromLevel, 
-// fetchAllSolvedProblems, fetchAcceptedSubmissionListGraphQL
+// buildLeetCodeFolderName, extractLeetCodeSubmissionCodeFromHtml, difficultyLabelFromLevel,
+// bumpSolvedStats, fetchAllSolvedProblems, fetchAcceptedSubmissionListGraphQL
 
 /* Helper to map API language to extension */
 
@@ -476,10 +476,7 @@ async function maybeImportExistingLeetCodeSolutions() {
           // we have for the problem.
           if (!hadAnyCodeBefore && !bumpedProblemStats && !codeSha) {
             bumpedProblemStats = true;
-            stats.solved += 1;
-            stats.easy += difficultyImport === 'Easy' ? 1 : 0;
-            stats.medium += difficultyImport === 'Medium' ? 1 : 0;
-            stats.hard += difficultyImport === 'Hard' ? 1 : 0;
+            bumpSolvedStats(stats, difficultyImport);
           }
 
           await safeStorageSet({ stats });
