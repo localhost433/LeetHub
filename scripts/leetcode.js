@@ -10,7 +10,8 @@
   // Expect safeStorageGet/safeStorageSet, leetCodeGraphQL, fetchLeetCodeSubmissionCodeGraphQL,
   // fetchLeetCodeSubmissionDetail, githubUploadViaBackground, buildLeetCodeFolderName, padProblemId,
   // appendSubmissionIdToFilename, hasSubmissionIdShaForFolder, hasAnyCodeShaForFolder,
-  // bumpSolvedStats, langToExt — all loaded via manifest before this script.
+  // normalizeLeetCodeImportSettings, bumpSolvedStats, langToExt — all loaded via manifest
+  // before this script.
 
   // Gate on the (non-secret) hook; a configured hook implies an authed token.
   // The token itself is held only by the background worker and never read here.
@@ -95,10 +96,17 @@
         `LeetHub: Processing submission ${submissionId} for ${slug}`,
       );
 
-      const data = await safeStorageGet(['leethub_hook', 'stats']);
+      const data = await safeStorageGet([
+        'leethub_hook',
+        'stats',
+        'leetcode_import_settings',
+      ]);
       if (!data.leethub_hook) return;
 
       const hook = data.leethub_hook;
+      const settings = normalizeLeetCodeImportSettings(
+        data.leetcode_import_settings,
+      );
       const stats =
         data.stats && typeof data.stats === 'object'
           ? data.stats
@@ -148,10 +156,18 @@
         return;
       }
 
-      const codeFilename = appendSubmissionIdToFilename(
-        `${folder}${ext}`,
-        submissionId,
-      );
+      // Keep every accepted submission as its own `_<submissionId>` file,
+      // unless the user asked for latest-per-language to apply to new accepts
+      // too — then we overwrite the single per-language file.
+      const keepAll =
+        settings.scope !== 'backfill_and_new' ||
+        settings.mode === 'all_submissions';
+      const codeFilename = keepAll
+        ? appendSubmissionIdToFilename(
+            `${folder}${ext}`,
+            submissionId,
+          )
+        : `${folder}${ext}`;
       const codeFilePathKey = `${folder}/${codeFilename}`;
       const readmeKey = `${folder}/README.md`;
       const codeSha = shaMap[codeFilePathKey] || null;

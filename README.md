@@ -28,7 +28,7 @@ This fork’s notable additions/changes:
 - **Manifest V3 + stricter CSP** with PAT-only auth (fine-grained PAT recommended).
 - **Repo sync seeding**: scans an existing repo and seeds `stats.sha` to avoid duplicate uploads.
 - **Backfill import**: imports existing accepted solutions from LeetCode in background batches after a repo is linked.
-- **Multi-accepted handling options**: latest accepted per language, or keep all accepted submissions (suffix filenames with `_<submissionId>`).
+- **Multi-accepted handling options**: latest accepted per language, or keep all accepted submissions (suffix filenames with `_<submissionId>`). **Apply to** decides whether that choice covers newly accepted submissions as well, or only the backfill.
 
 ## Install (unpacked)
 
