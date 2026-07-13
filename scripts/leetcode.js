@@ -16,7 +16,9 @@
   // The token itself is held only by the background worker and never read here.
   const config = await safeStorageGet(['leethub_hook']);
   if (!config.leethub_hook) {
-    console.log('LeetHub: No hook configured, skipping submission watcher');
+    console.log(
+      'LeetHub: No hook configured, skipping submission watcher',
+    );
     return;
   }
 
@@ -29,14 +31,17 @@
   chrome.runtime.onMessage.addListener((request) => {
     if (request.type === 'LEETHUB_IMPORT_NOW') {
       console.log('LeetHub: Manual import triggered');
-      if (typeof maybeImportExistingLeetCodeSolutions === 'function') {
+      if (
+        typeof maybeImportExistingLeetCodeSolutions === 'function'
+      ) {
         maybeImportExistingLeetCodeSolutions();
       }
     }
   });
 
   // Submission detail URL pattern: /problems/{slug}/submissions/{id}/
-  const SUBMISSION_URL_RE = /\/problems\/([^/]+)\/submissions\/(\d+)\/?/;
+  const SUBMISSION_URL_RE =
+    /\/problems\/([^/]+)\/submissions\/(\d+)\/?/;
 
   let lastUrl = location.href;
   let lastProcessedId = null;
@@ -65,7 +70,10 @@
 
   // MutationObserver as a belt-and-suspenders fallback
   const navObserver = new MutationObserver(onUrlChange);
-  navObserver.observe(document.documentElement, { childList: true, subtree: true });
+  navObserver.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+  });
 
   // Also handle direct load onto a submission URL
   maybeHandleUrl(location.href);
@@ -83,7 +91,9 @@
 
   async function processSubmission(slug, submissionId) {
     try {
-      console.log(`LeetHub: Processing submission ${submissionId} for ${slug}`);
+      console.log(
+        `LeetHub: Processing submission ${submissionId} for ${slug}`,
+      );
 
       const data = await safeStorageGet(['leethub_hook', 'stats']);
       if (!data.leethub_hook) return;
@@ -125,7 +135,10 @@
 
       // Dedup: already uploaded this exact submission?
       if (hasSubmissionIdShaForFolder(shaMap, folder, submissionId)) {
-        console.log('LeetHub: Already uploaded submission', submissionId);
+        console.log(
+          'LeetHub: Already uploaded submission',
+          submissionId,
+        );
         return;
       }
 
@@ -135,7 +148,10 @@
         return;
       }
 
-      const codeFilename = appendSubmissionIdToFilename(`${folder}${ext}`, submissionId);
+      const codeFilename = appendSubmissionIdToFilename(
+        `${folder}${ext}`,
+        submissionId,
+      );
       const codeFilePathKey = `${folder}/${codeFilename}`;
       const readmeKey = `${folder}/README.md`;
       const codeSha = shaMap[codeFilePathKey] || null;
@@ -143,14 +159,23 @@
       const hadAnyCodeBefore = hasAnyCodeShaForFolder(shaMap, folder);
 
       const commitMsg = buildCommitMsg(title, frontendId);
-      const readmeContent = buildReadmeContent(frontendId, title, slug, difficulty, submission.runtimePercentile, submission.memoryPercentile);
+      const readmeContent = buildReadmeContent(
+        frontendId,
+        title,
+        slug,
+        difficulty,
+        submission.runtimePercentile,
+        submission.memoryPercentile,
+      );
 
       // Upload README (best-effort)
       const readmeRes = await githubUploadViaBackground({
         hook,
         directory: folder,
         filename: 'README.md',
-        contentBase64: btoa(unescape(encodeURIComponent(readmeContent))),
+        contentBase64: btoa(
+          unescape(encodeURIComponent(readmeContent)),
+        ),
         message: readmeMsg,
         sha: readmeSha,
       });
@@ -163,13 +188,19 @@
         hook,
         directory: folder,
         filename: codeFilename,
-        contentBase64: btoa(unescape(encodeURIComponent(submission.code))),
+        contentBase64: btoa(
+          unescape(encodeURIComponent(submission.code)),
+        ),
         message: commitMsg,
         sha: codeSha,
       });
 
       if (!codeRes.ok) {
-        console.error('LeetHub: Code upload failed', codeRes.status, codeRes.json);
+        console.error(
+          'LeetHub: Code upload failed',
+          codeRes.status,
+          codeRes.json,
+        );
         return;
       }
 
@@ -182,7 +213,9 @@
 
       stats.sha = shaMap;
       await safeStorageSet({ stats });
-      console.log(`LeetHub: Successfully uploaded ${folder}/${codeFilename}`);
+      console.log(
+        `LeetHub: Successfully uploaded ${folder}/${codeFilename}`,
+      );
     } catch (err) {
       if (!isExtensionContextInvalidatedError(err)) {
         console.error('LeetHub: processSubmission failed', err);
@@ -197,11 +230,20 @@
     return msg;
   }
 
-  function buildReadmeContent(frontendId, title, slug, difficulty, runtimePct, memoryPct) {
+  function buildReadmeContent(
+    frontendId,
+    title,
+    slug,
+    difficulty,
+    runtimePct,
+    memoryPct,
+  ) {
     const id = padProblemId(frontendId) || '';
     let stats = difficulty || '';
-    if (runtimePct != null) stats += ` | Runtime: ${runtimePct.toFixed(2)}%`;
-    if (memoryPct != null) stats += ` | Memory: ${memoryPct.toFixed(2)}%`;
+    if (runtimePct != null)
+      stats += ` | Runtime: ${runtimePct.toFixed(2)}%`;
+    if (memoryPct != null)
+      stats += ` | Memory: ${memoryPct.toFixed(2)}%`;
     return `# ${id}. ${title}\n## ${stats}\n\nhttps://leetcode.com/problems/${slug}/\n`;
   }
 

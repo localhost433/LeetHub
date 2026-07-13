@@ -1,7 +1,6 @@
 /* eslint-disable no-unused-vars */
 
 const toKebabCase = (string) => {
-
   return string
     .replace(/[^a-zA-Z0-9\. ]/g, '')
     .replace(/([a-z])([A-Z])/g, '$1-$2')
@@ -308,9 +307,13 @@ async function githubUploadViaBackground({
           }
           const status = (response && response.status) || 0;
           const ok = status === 200 || status === 201;
-          const data = response && response.data ? response.data : null;
+          const data =
+            response && response.data ? response.data : null;
           const newSha =
-            (data && data.content && (data.content.sha || data.content.git_sha)) || '';
+            (data &&
+              data.content &&
+              (data.content.sha || data.content.git_sha)) ||
+            '';
           resolve({
             ok,
             status,
@@ -321,7 +324,13 @@ async function githubUploadViaBackground({
         },
       );
     } catch (e) {
-      resolve({ ok: false, status: 0, sha: '', error: String(e), json: null });
+      resolve({
+        ok: false,
+        status: 0,
+        sha: '',
+        error: String(e),
+        json: null,
+      });
     }
   });
 }
@@ -626,7 +635,8 @@ function bumpSolvedStats(stats, difficulty) {
   if (!stats || typeof stats !== 'object') return stats;
   stats.solved = (stats.solved || 0) + 1;
   if (difficulty === 'Easy') stats.easy = (stats.easy || 0) + 1;
-  else if (difficulty === 'Medium') stats.medium = (stats.medium || 0) + 1;
+  else if (difficulty === 'Medium')
+    stats.medium = (stats.medium || 0) + 1;
   else if (difficulty === 'Hard') stats.hard = (stats.hard || 0) + 1;
   return stats;
 }
@@ -655,6 +665,3 @@ if (typeof module !== 'undefined' && module.exports) {
     bumpSolvedStats,
   };
 }
-
-
-
