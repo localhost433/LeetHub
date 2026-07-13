@@ -21,6 +21,8 @@ const {
   extractLeetCodeSubmissionCodeFromHtml,
   difficultyLabelFromLevel,
   bumpSolvedStats,
+  problemIdFromFolderName,
+  countSolvedByDifficulty,
 } = require('../scripts/common');
 
 describe('appendSubmissionIdToFilename', () => {
@@ -300,5 +302,105 @@ describe('bumpSolvedStats', () => {
     expect(bumpSolvedStats(null, 'Easy')).toBeNull();
     expect(bumpSolvedStats(undefined, 'Easy')).toBeUndefined();
     expect(bumpSolvedStats(42, 'Easy')).toBe(42);
+  });
+});
+
+describe('problemIdFromFolderName', () => {
+  test('extracts the padded id from a repo folder name', () => {
+    expect(problemIdFromFolderName('0001-two-sum')).toBe('0001');
+    expect(
+      problemIdFromFolderName('1768-merge-strings-alternately'),
+    ).toBe('1768');
+  });
+
+  test('pads a short leading id', () => {
+    expect(problemIdFromFolderName('42-trapping-rain-water')).toBe(
+      '0042',
+    );
+  });
+
+  test('returns null when there is no numeric id', () => {
+    expect(problemIdFromFolderName('two-sum')).toBeNull();
+    expect(problemIdFromFolderName('')).toBeNull();
+    expect(problemIdFromFolderName(null)).toBeNull();
+    expect(problemIdFromFolderName('.github')).toBeNull();
+  });
+});
+
+describe('countSolvedByDifficulty', () => {
+  const solved = [
+    { frontendId: 1, titleSlug: 'two-sum', difficulty: 'Easy' },
+    {
+      frontendId: 2,
+      titleSlug: 'add-two-numbers',
+      difficulty: 'Medium',
+    },
+    {
+      frontendId: 4,
+      titleSlug: 'median-of-two-sorted-arrays',
+      difficulty: 'Hard',
+    },
+    {
+      frontendId: 42,
+      titleSlug: 'trapping-rain-water',
+      difficulty: 'Hard',
+    },
+  ];
+
+  test('counts repo folders by difficulty from the solved list', () => {
+    const counts = countSolvedByDifficulty(
+      [
+        '0001-two-sum',
+        '0002-add-two-numbers',
+        '0042-trapping-rain-water',
+      ],
+      solved,
+    );
+    expect(counts).toEqual({ easy: 1, medium: 1, hard: 1 });
+  });
+
+  test('matches on problem id even if the folder slug drifted', () => {
+    const counts = countSolvedByDifficulty(
+      ['0004-median-renamed'],
+      solved,
+    );
+    expect(counts).toEqual({ easy: 0, medium: 0, hard: 1 });
+  });
+
+  test('ignores folders with no matching solved problem', () => {
+    const counts = countSolvedByDifficulty(
+      ['0001-two-sum', '9999-not-a-problem', 'assets'],
+      solved,
+    );
+    expect(counts).toEqual({ easy: 1, medium: 0, hard: 0 });
+  });
+
+  test('counts each problem once even if the folder repeats', () => {
+    const counts = countSolvedByDifficulty(
+      ['0001-two-sum', '0001-two-sum'],
+      solved,
+    );
+    expect(counts).toEqual({ easy: 1, medium: 0, hard: 0 });
+  });
+
+  test('accepts a Set of folder names', () => {
+    const counts = countSolvedByDifficulty(
+      new Set(['0001-two-sum', '0002-add-two-numbers']),
+      solved,
+    );
+    expect(counts).toEqual({ easy: 1, medium: 1, hard: 0 });
+  });
+
+  test('returns zeros when the solved list is empty or missing', () => {
+    expect(countSolvedByDifficulty(['0001-two-sum'], [])).toEqual({
+      easy: 0,
+      medium: 0,
+      hard: 0,
+    });
+    expect(countSolvedByDifficulty(['0001-two-sum'], null)).toEqual({
+      easy: 0,
+      medium: 0,
+      hard: 0,
+    });
   });
 });

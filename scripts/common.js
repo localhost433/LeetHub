@@ -630,6 +630,48 @@ function bumpSolvedStats(stats, difficulty) {
   return stats;
 }
 
+// Inverse of buildLeetCodeFolderName: '0001-two-sum' -> '0001'. Returns null for
+// any directory that is not a problem folder.
+function problemIdFromFolderName(folderName) {
+  const id = String(folderName || '')
+    .trim()
+    .split('-')[0];
+  if (!/^\d+$/.test(id)) return null;
+  return padProblemId(id);
+}
+
+// Count the problem folders present in the repo by difficulty, using `solvedProblems`
+// (from fetchAllSolvedProblems) as the difficulty source. The repo tree records which
+// problems are solved but not how hard they are, so the two have to be joined here.
+// Matching is by problem id, not folder name, so a slug LeetCode has since renamed
+// still counts. Folders with no matching solved problem land in no bucket, so the
+// buckets can sum to less than the folder count.
+function countSolvedByDifficulty(folderNames, solvedProblems) {
+  const counts = { easy: 0, medium: 0, hard: 0 };
+
+  const difficultyById = new Map();
+  (Array.isArray(solvedProblems) ? solvedProblems : []).forEach(
+    (p) => {
+      const id = padProblemId(p?.frontendId);
+      if (id) difficultyById.set(id, p?.difficulty || '');
+    },
+  );
+
+  const counted = new Set();
+  Array.from(folderNames || []).forEach((name) => {
+    const id = problemIdFromFolderName(name);
+    if (!id || counted.has(id)) return;
+    counted.add(id);
+
+    const difficulty = difficultyById.get(id);
+    if (difficulty === 'Easy') counts.easy += 1;
+    else if (difficulty === 'Medium') counts.medium += 1;
+    else if (difficulty === 'Hard') counts.hard += 1;
+  });
+
+  return counts;
+}
+
 // End of common utils
 
 // Export the pure helpers for Node/Jest. In the browser `module` is undefined,
@@ -651,5 +693,7 @@ if (typeof module !== 'undefined' && module.exports) {
     extractLeetCodeSubmissionCodeFromHtml,
     difficultyLabelFromLevel,
     bumpSolvedStats,
+    problemIdFromFolderName,
+    countSolvedByDifficulty,
   };
 }

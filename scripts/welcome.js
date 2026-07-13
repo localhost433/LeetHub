@@ -329,6 +329,19 @@ const syncExistingSolutions = async (token, hook) => {
       if (file === 'README.md') solvedDirs.add(dir);
     });
 
+    // The repo tree says which problems are solved but not how hard they are, so
+    // pull difficulty from LeetCode and recount. Without this the breakdown stays
+    // at whatever bumpSolvedStats happened to accumulate, which is 0 for a repo
+    // that was already backfilled (nothing uploads, so nothing bumps).
+    // A logged-out user still gets ok:true here, just with an empty list — which
+    // would recount every folder as unknown and zero the breakdown. Require at
+    // least one solved problem before trusting the response.
+    const solvedResp = await fetchAllSolvedProblems();
+    const breakdown =
+      solvedResp.ok && solvedResp.solved.length > 0
+        ? countSolvedByDifficulty(solvedDirs, solvedResp.solved)
+        : null;
+
     chrome.storage.local.get('stats', (s) => {
       let { stats } = s;
       if (!stats || typeof stats !== 'object') {
@@ -341,6 +354,13 @@ const syncExistingSolutions = async (token, hook) => {
         Number(stats.solved || 0),
         solvedDirs.size,
       );
+      // Leave the old counts alone if LeetCode is unreachable or the user is
+      // logged out; a failed fetch shouldn't silently zero the breakdown.
+      if (breakdown) {
+        stats.easy = breakdown.easy;
+        stats.medium = breakdown.medium;
+        stats.hard = breakdown.hard;
+      }
 
       chrome.storage.local.set({ stats }, () => {
         if (stats && stats.solved) {
