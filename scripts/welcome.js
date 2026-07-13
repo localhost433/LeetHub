@@ -127,10 +127,54 @@ const repositoryName = () => {
   return $('#name').val().trim();
 };
 
+/* A fresh backfill state, used when a repo is first linked or changed. */
+const freshImportState = () => ({
+  done: false,
+  strategy: 'problems_all',
+  index: 0,
+  total: 0,
+  uploaded: 0,
+  ts: Date.now(),
+});
+
 /* Status codes for creating of repo */
 
 const statusCode = (res, status, name) => {
   switch (status) {
+    case 201:
+      /* Change mode type to commit */
+      chrome.storage.local.set({ mode_type: 'commit' }, () => {
+        $('#error').hide();
+        renderSuccessRepoMessage('created', res.html_url, name);
+        $('#success').show();
+        $('#unlink').show();
+        /* Show new layout */
+        document.getElementById('hook_mode').style.display = 'none';
+        document.getElementById('commit_mode').style.display =
+          'inherit';
+      });
+      /* Set Repo Hook */
+      chrome.storage.local.set(
+        {
+          leethub_hook: res.full_name,
+          leetcode_import: freshImportState(),
+          leetcode_import_settings: {
+            ...DEFAULT_LEETCODE_IMPORT_SETTINGS,
+          },
+        },
+        () => {
+          console.log('Successfully set new repo hook');
+        },
+      );
+
+      chrome.storage.local.get('leethub_token', (t) => {
+        if (t && t.leethub_token && res && res.full_name) {
+          syncExistingSolutions(t.leethub_token, res.full_name);
+        }
+      });
+
+      break;
+
     case 304:
       $('#success').hide();
       $('#error').text(
@@ -172,44 +216,11 @@ const statusCode = (res, status, name) => {
       break;
 
     default:
-      /* Change mode type to commit */
-      chrome.storage.local.set({ mode_type: 'commit' }, () => {
-        $('#error').hide();
-        renderSuccessRepoMessage('created', res.html_url, name);
-        $('#success').show();
-        $('#unlink').show();
-        /* Show new layout */
-        document.getElementById('hook_mode').style.display = 'none';
-        document.getElementById('commit_mode').style.display =
-          'inherit';
-      });
-      /* Set Repo Hook */
-      chrome.storage.local.set(
-        {
-          leethub_hook: res.full_name,
-          leetcode_import: {
-            done: false,
-            strategy: 'problems_all',
-            index: 0,
-            total: 0,
-            uploaded: 0,
-            ts: Date.now(),
-          },
-          leetcode_import_settings: {
-            ...DEFAULT_LEETCODE_IMPORT_SETTINGS,
-          },
-        },
-        () => {
-          console.log('Successfully set new repo hook');
-        },
+      $('#success').hide();
+      $('#error').text(
+        `Error creating ${name} - GitHub returned status ${status}. Try again later!`,
       );
-
-      chrome.storage.local.get('leethub_token', (t) => {
-        if (t && t.leethub_token && res && res.full_name) {
-          syncExistingSolutions(t.leethub_token, res.full_name);
-        }
-      });
-
+      $('#error').show();
       break;
   }
 };
@@ -413,46 +424,56 @@ const linkRepo = (token, name) => {
             $('#unlink').show();
           },
         );
-        /* Set Repo Hook */
-        chrome.storage.local.set(
-          {
-            leethub_hook: res.full_name,
-            leetcode_import: {
-              done: false,
-              strategy: 'problems_all',
-              index: 0,
-              total: 0,
-              uploaded: 0,
-              ts: Date.now(),
-            },
-            leetcode_import_settings: {
-              ...DEFAULT_LEETCODE_IMPORT_SETTINGS,
-            },
-          },
-          () => {
-            console.log('Successfully set new repo hook');
-            /* Get problems solved count */
-            chrome.storage.local.get('stats', (psolved) => {
-              const { stats } = psolved;
-              if (stats && stats.solved) {
-                $('#p_solved').text(stats.solved);
-                $('#p_solved_easy').text(stats.easy || 0);
-                $('#p_solved_medium').text(stats.medium || 0);
-                $('#p_solved_hard').text(stats.hard || 0);
+        /* Set Repo Hook.
+           linkRepo also runs on every page load just to re-check access, so
+           only (re)initialise the backfill state when the repo actually
+           changed. Otherwise an open of this page would restart the import
+           and reset the user's import settings. */
+        chrome.storage.local.get(
+          [
+            'leethub_hook',
+            'leetcode_import',
+            'leetcode_import_settings',
+          ],
+          (prev) => {
+            const next = { leethub_hook: res.full_name };
+            if (
+              prev.leethub_hook !== res.full_name ||
+              !prev.leetcode_import
+            ) {
+              next.leetcode_import = freshImportState();
+            }
+            if (!prev.leetcode_import_settings) {
+              next.leetcode_import_settings = {
+                ...DEFAULT_LEETCODE_IMPORT_SETTINGS,
+              };
+            }
+
+            chrome.storage.local.set(next, () => {
+              console.log('Successfully set new repo hook');
+              /* Get problems solved count */
+              chrome.storage.local.get('stats', (psolved) => {
+                const { stats } = psolved;
+                if (stats && stats.solved) {
+                  $('#p_solved').text(stats.solved);
+                  $('#p_solved_easy').text(stats.easy || 0);
+                  $('#p_solved_medium').text(stats.medium || 0);
+                  $('#p_solved_hard').text(stats.hard || 0);
+                }
+              });
+
+              if (token && res && res.full_name) {
+                chrome.storage.local.get('stats', (existing) => {
+                  const existingStats = existing?.stats;
+                  const hasSha =
+                    existingStats &&
+                    existingStats.sha &&
+                    Object.keys(existingStats.sha).length > 0;
+                  if (!hasSha)
+                    syncExistingSolutions(token, res.full_name);
+                });
               }
             });
-
-            if (token && res && res.full_name) {
-              chrome.storage.local.get('stats', (existing) => {
-                const existingStats = existing?.stats;
-                const hasSha =
-                  existingStats &&
-                  existingStats.sha &&
-                  Object.keys(existingStats.sha).length > 0;
-                if (!hasSha)
-                  syncExistingSolutions(token, res.full_name);
-              });
-            }
           },
         );
         /* Hide accordingly */
