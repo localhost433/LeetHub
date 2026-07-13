@@ -88,21 +88,6 @@ function renderImportStatus(importState) {
   el.textContent = '';
 }
 
-function normalizeLeetCodeImportSettings(raw) {
-  const modeRaw = raw && typeof raw === 'object' ? raw.mode : null;
-  const scopeRaw = raw && typeof raw === 'object' ? raw.scope : null;
-  return {
-    mode:
-      modeRaw === 'all_submissions' || modeRaw === 'latest_per_lang'
-        ? modeRaw
-        : 'latest_per_lang',
-    scope:
-      scopeRaw === 'backfill_and_new' || scopeRaw === 'backfill_only'
-        ? scopeRaw
-        : 'backfill_only',
-  };
-}
-
 async function pingActiveLeetCodeTab(message) {
   try {
     const tabs = await chrome.tabs.query({
@@ -252,7 +237,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (repoUrlEl && hook) {
         repoUrlEl.innerHTML = '';
         const a = document.createElement('a');
-        a.target = 'blank';
+        a.target = '_blank';
+        a.rel = 'noreferrer';
         a.href = `https://github.com/${hook}`;
         a.textContent = hook;
         repoUrlEl.appendChild(a);

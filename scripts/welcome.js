@@ -196,8 +196,7 @@ const statusCode = (res, status, name) => {
             ts: Date.now(),
           },
           leetcode_import_settings: {
-            mode: 'latest_per_lang',
-            scope: 'backfill_only',
+            ...DEFAULT_LEETCODE_IMPORT_SETTINGS,
           },
         },
         () => {
@@ -315,7 +314,7 @@ const syncExistingSolutions = async (token, hook) => {
       const [dir, file] = parts;
       if (!dir || !file) return;
 
-      additions[dir + file] = item.sha;
+      additions[`${dir}/${file}`] = item.sha;
       if (file === 'README.md') solvedDirs.add(dir);
     });
 
@@ -350,7 +349,6 @@ const syncExistingSolutions = async (token, hook) => {
 
 /* Status codes for linking of repo */
 const linkStatusCode = (status, name) => {
-  let bool = false;
   switch (status) {
     case 301:
       $('#success').hide();
@@ -380,11 +378,8 @@ const linkStatusCode = (status, name) => {
       break;
 
     default:
-      bool = true;
       break;
   }
-  $('#unlink').show();
-  return bool;
 };
 
 /* 
@@ -405,85 +400,65 @@ const linkRepo = (token, name) => {
       } catch (e) {
         res = {};
       }
-      const bool = linkStatusCode(xhr.status, name);
+      linkStatusCode(xhr.status, name);
       if (xhr.status === 200) {
-        // BUG FIX
-        if (!bool) {
-          // unable to gain access to repo in commit mode. Must switch to hook mode.
-          /* Set mode type to hook */
-          chrome.storage.local.set({ mode_type: 'hook' }, () => {
-            console.log(`Error linking ${name} to LeetHub`);
-          });
-          /* Set Repo Hook to NONE */
-          chrome.storage.local.set({ leethub_hook: null }, () => {
-            console.log('Defaulted repo hook to NONE');
-          });
-
-          /* Hide accordingly */
-          document.getElementById('hook_mode').style.display =
-            'inherit';
-          document.getElementById('commit_mode').style.display =
-            'none';
-        } else {
-          /* Change mode type to commit */
-          /* Save repo url to chrome storage */
-          chrome.storage.local.set(
-            { mode_type: 'commit', repo: res.html_url },
-            () => {
-              $('#error').hide();
-              renderSuccessRepoMessage('linked', res.html_url, name);
-              $('#success').show();
-              $('#unlink').show();
+        /* Change mode type to commit */
+        /* Save repo url to chrome storage */
+        chrome.storage.local.set(
+          { mode_type: 'commit', repo: res.html_url },
+          () => {
+            $('#error').hide();
+            renderSuccessRepoMessage('linked', res.html_url, name);
+            $('#success').show();
+            $('#unlink').show();
+          },
+        );
+        /* Set Repo Hook */
+        chrome.storage.local.set(
+          {
+            leethub_hook: res.full_name,
+            leetcode_import: {
+              done: false,
+              strategy: 'problems_all',
+              index: 0,
+              total: 0,
+              uploaded: 0,
+              ts: Date.now(),
             },
-          );
-          /* Set Repo Hook */
-          chrome.storage.local.set(
-            {
-              leethub_hook: res.full_name,
-              leetcode_import: {
-                done: false,
-                strategy: 'problems_all',
-                index: 0,
-                total: 0,
-                uploaded: 0,
-                ts: Date.now(),
-              },
-              leetcode_import_settings: {
-                mode: 'latest_per_lang',
-                scope: 'backfill_only',
-              },
+            leetcode_import_settings: {
+              ...DEFAULT_LEETCODE_IMPORT_SETTINGS,
             },
-            () => {
-              console.log('Successfully set new repo hook');
-              /* Get problems solved count */
-              chrome.storage.local.get('stats', (psolved) => {
-                const { stats } = psolved;
-                if (stats && stats.solved) {
-                  $('#p_solved').text(stats.solved);
-                  $('#p_solved_easy').text(stats.easy);
-                  $('#p_solved_medium').text(stats.medium);
-                  $('#p_solved_hard').text(stats.hard);
-                }
-              });
-
-              if (token && res && res.full_name) {
-                chrome.storage.local.get('stats', (existing) => {
-                  const existingStats = existing?.stats;
-                  const hasSha =
-                    existingStats &&
-                    existingStats.sha &&
-                    Object.keys(existingStats.sha).length > 0;
-                  if (!hasSha)
-                    syncExistingSolutions(token, res.full_name);
-                });
+          },
+          () => {
+            console.log('Successfully set new repo hook');
+            /* Get problems solved count */
+            chrome.storage.local.get('stats', (psolved) => {
+              const { stats } = psolved;
+              if (stats && stats.solved) {
+                $('#p_solved').text(stats.solved);
+                $('#p_solved_easy').text(stats.easy || 0);
+                $('#p_solved_medium').text(stats.medium || 0);
+                $('#p_solved_hard').text(stats.hard || 0);
               }
-            },
-          );
-          /* Hide accordingly */
-          document.getElementById('hook_mode').style.display = 'none';
-          document.getElementById('commit_mode').style.display =
-            'inherit';
-        }
+            });
+
+            if (token && res && res.full_name) {
+              chrome.storage.local.get('stats', (existing) => {
+                const existingStats = existing?.stats;
+                const hasSha =
+                  existingStats &&
+                  existingStats.sha &&
+                  Object.keys(existingStats.sha).length > 0;
+                if (!hasSha)
+                  syncExistingSolutions(token, res.full_name);
+              });
+            }
+          },
+        );
+        /* Hide accordingly */
+        document.getElementById('hook_mode').style.display = 'none';
+        document.getElementById('commit_mode').style.display =
+          'inherit';
       }
     }
   });
@@ -570,7 +545,7 @@ $('#hook_button').on('click', () => {
             $('#error').show();
             $('#success').hide();
           } else {
-            linkRepo(token, `${username}/${repositoryName()}`, false);
+            linkRepo(token, `${username}/${repositoryName()}`);
           }
         });
       }
@@ -636,21 +611,6 @@ chrome.storage.local.get('mode_type', (data) => {
     document.getElementById('commit_mode').style.display = 'none';
   }
 });
-
-function normalizeLeetCodeImportSettings(raw) {
-  const modeRaw = raw && typeof raw === 'object' ? raw.mode : null;
-  const scopeRaw = raw && typeof raw === 'object' ? raw.scope : null;
-  return {
-    mode:
-      modeRaw === 'all_submissions' || modeRaw === 'latest_per_lang'
-        ? modeRaw
-        : 'latest_per_lang',
-    scope:
-      scopeRaw === 'backfill_and_new' || scopeRaw === 'backfill_only'
-        ? scopeRaw
-        : 'backfill_only',
-  };
-}
 
 function initLeetCodeImportSettingsUI() {
   const modeEl = document.getElementById('lc_import_mode');
