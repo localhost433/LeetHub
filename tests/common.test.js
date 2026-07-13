@@ -11,7 +11,6 @@
 Object.assign(global, require('../scripts/constants'));
 
 const {
-  toKebabCase,
   normalizeLeetCodeImportSettings,
   appendSubmissionIdToFilename,
   hasAnyCodeShaForFolder,
@@ -23,23 +22,6 @@ const {
   difficultyLabelFromLevel,
   bumpSolvedStats,
 } = require('../scripts/common');
-
-describe('toKebabCase', () => {
-  test('converts spaces to dashes', () => {
-    expect(toKebabCase('Hello World')).toBe('hello-world');
-  });
-  test('keeps dots, strips other punctuation', () => {
-    expect(toKebabCase('Hello.World!')).toBe('hello.world');
-  });
-  test('splits camelCase', () => {
-    expect(toKebabCase('helloWorld')).toBe('hello-world');
-  });
-  test('mixed content', () => {
-    expect(toKebabCase('LeetCode 123. Two Sum')).toBe(
-      'leet-code-123.-two-sum',
-    );
-  });
-});
 
 describe('appendSubmissionIdToFilename', () => {
   test('inserts id before the extension', () => {

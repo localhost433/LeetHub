@@ -273,9 +273,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (refreshBtn) {
       refreshBtn.addEventListener('click', async () => {
         await refreshCommitMode();
-        await pingActiveLeetCodeTab({
-          type: 'LEETHUB_IMPORT_STATUS_PING',
-        });
       });
     }
 

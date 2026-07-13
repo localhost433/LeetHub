@@ -1,13 +1,5 @@
 /* eslint-disable no-unused-vars */
 
-const toKebabCase = (string) => {
-  return string
-    .replace(/[^a-zA-Z0-9\. ]/g, '')
-    .replace(/([a-z])([A-Z])/g, '$1-$2')
-    .replace(/[\s_]+/g, '-')
-    .toLowerCase();
-};
-
 function normalizeLeetCodeImportSettings(raw) {
   const modeRaw = raw && typeof raw === 'object' ? raw.mode : null;
   const scopeRaw = raw && typeof raw === 'object' ? raw.scope : null;
@@ -143,7 +135,6 @@ async function fetchLeetCodeSubmissionDetail(submissionId) {
 
   const referrer = `https://leetcode.com/submissions/detail/${id}/`;
   let lastStatus = 0;
-  let lastHadJson = false;
 
   // eslint-disable-next-line no-restricted-syntax
   for (const url of urls) {
@@ -151,7 +142,6 @@ async function fetchLeetCodeSubmissionDetail(submissionId) {
     const resp = await leetCodeFetchJson(url, { referrer });
     lastStatus = resp.status;
     if (resp.status !== 200 || !resp.json) continue;
-    lastHadJson = true;
 
     const code =
       resp.json.code ||
@@ -186,7 +176,8 @@ async function fetchLeetCodeSubmissionDetail(submissionId) {
     return { ok: false, status: resp.status, hadJson: true };
   }
 
-  return { ok: false, status: lastStatus, hadJson: lastHadJson };
+  // Every URL returned a non-200 or unparseable body.
+  return { ok: false, status: lastStatus, hadJson: false };
 }
 
 async function fetchLeetCodeSubmissionCodeGraphQL(submissionId) {
@@ -197,9 +188,6 @@ async function fetchLeetCodeSubmissionCodeGraphQL(submissionId) {
   const query =
     'query leethubSubmissionDetails($submissionId: Int!) { submissionDetails(submissionId: $submissionId) { code lang { name } } }';
 
-  let lastStatus = 0;
-  let lastError = '';
-
   const res = await leetCodeGraphQL(
     query,
     { submissionId: idNum },
@@ -207,14 +195,15 @@ async function fetchLeetCodeSubmissionCodeGraphQL(submissionId) {
       referrer: `https://leetcode.com/submissions/detail/${idNum}/`,
     },
   );
-  lastStatus = res.status;
+
+  let error = '';
   if (
     res?.json?.errors &&
     Array.isArray(res.json.errors) &&
     res.json.errors.length > 0
   ) {
     const msg = res.json.errors[0]?.message;
-    if (msg) lastError = String(msg);
+    if (msg) error = String(msg);
   }
 
   const obj = res?.json?.data?.submissionDetails;
@@ -237,8 +226,8 @@ async function fetchLeetCodeSubmissionCodeGraphQL(submissionId) {
 
   return {
     ok: false,
-    status: lastStatus || 0,
-    error: lastError || '',
+    status: res.status || 0,
+    error,
   };
 }
 
@@ -650,7 +639,6 @@ function bumpSolvedStats(stats, difficulty) {
 // from constants.js; tests make it available before requiring this module.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
-    toKebabCase,
     normalizeLeetCodeImportSettings,
     appendSubmissionIdToFilename,
     hasAnyCodeShaForFolder,
