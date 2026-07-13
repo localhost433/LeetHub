@@ -12,7 +12,7 @@ This project is a fork in the LeetHub ecosystem:
 ## What it does
 
 - **Automated Submission Handling**: When you submit a solution on LeetCode and it gets **Accepted**, the extension automatically creates/updates a folder for that problem in your configured GitHub repo.
-- **Manual Import**: You can manually import your existing accepted solutions from LeetCode by clicking the "Sync" button in the extension popup. This does *not* happen automatically to prevent unwanted commits.
+- **Backfill Import**: Once a repo is linked, the extension backfills your existing accepted solutions from LeetCode in the background, a batch at a time, while you have LeetCode open. It runs once; use **Retry import** in the popup to run it again.
 - **Deduplication**: It tracks solved counts and file SHAs in `chrome.storage.local` to avoid duplicate commits.
 
 ## Comparison vs LeetHub-3.0
@@ -25,9 +25,9 @@ LeetHub-3.0 (raphaelheinz) focuses on LeetCode compatibility and adds:
 
 This fork’s notable additions/changes:
 
-- **Manifest V3 + stricter CSP** with PAT-first auth (fine-grained PAT recommended).
+- **Manifest V3 + stricter CSP** with PAT-only auth (fine-grained PAT recommended).
 - **Repo sync seeding**: scans an existing repo and seeds `stats.sha` to avoid duplicate uploads.
-- **Manual Backfill**: imports existing accepted solutions from LeetCode only when explicitly triggered.
+- **Backfill import**: imports existing accepted solutions from LeetCode in background batches after a repo is linked.
 - **Multi-accepted handling options**: latest accepted per language, or keep all accepted submissions (suffix filenames with `_<submissionId>`).
 
 ## Install (unpacked)
@@ -74,6 +74,7 @@ npm run format
 npm run format-test
 npm run lint
 npm run lint-test
+npm test
 ```
 
 ## Troubleshooting

@@ -8,7 +8,7 @@
     "commonjs": true,
     "es6": true,
     "es2021": true,
-    "jquery": true,
+    "jest": true,
     "webextensions": true
   },
   "extends": ["eslint:recommended"],
